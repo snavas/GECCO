@@ -1,0 +1,1 @@
+# https://stackoverflow.com/questions/30988033/sending-live-video-frame-over-network-in-python-opencv
