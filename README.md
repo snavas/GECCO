@@ -32,6 +32,10 @@ pip install pyrealsense2
 ```
 
 ## Installation
+```
+git clone https://github.com/snavas/PyMote.git
+cd PyMote
+```
 
 ## Use
 
