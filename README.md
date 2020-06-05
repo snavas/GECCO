@@ -8,9 +8,13 @@ This project aims to develop a system for enabling hand gestures in a remote col
 
 ## Dependencies
 - numpy
-`pip install numpy`
+```
+pip install numpy
+```
 - opencv
-`pip install opencv-contrib-python`
+```
+pip install opencv-contrib-python
+```
 - vidgear (asyncio)
 ```
 git clone https://github.com/abhiTronix/vidgear.git
@@ -27,6 +31,14 @@ pip install pyrealsense2
 
 ## Use
 
+### Peer Mode
+```
+python start.py -o [HOST PORT NUMBER] -a [PEER IP ADDRESS] -p [PEER PORT NUMBER]
+```
+### Standalone Mode
+```
+python start.py -s
+```
 ## Known Issues
 
 ## Hardware Description
