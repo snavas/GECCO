@@ -19,7 +19,7 @@ pip install numpy
 ```
 pip install opencv-contrib-python
 ```
-- vidgear (asyncio)
+- [vidgear (asyncio)](https://github.com/abhiTronix/vidgear)
 ```
 git clone https://github.com/abhiTronix/vidgear.git
 cd vidgear
