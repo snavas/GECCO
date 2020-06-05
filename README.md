@@ -1,6 +1,10 @@
 # PyMote
 
-![Demo](https://snavas.github.io/img/image4.gif)
+<div align="center">
+ 
+ ![Demo](https://snavas.github.io/img/image4.gif)
+
+</div>
 
 ## Goal
  
