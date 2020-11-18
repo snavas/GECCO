@@ -1,4 +1,5 @@
-# PyMote
+# GECCO
+Gesture-Enabled Remote Communication and Collaboration
 
 <div align="center">
  
