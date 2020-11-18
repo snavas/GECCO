@@ -7,7 +7,7 @@ Gesture-Enabled Remote Communication and Collaboration
 
 </div>
 
-This project aims to develop a system for enabling hand gestures in a remote collaboration scenario, with a special focus on architectural design and using architectural paper plans. PyMote is a Python port of the [RCARAP system](https://github.com/sitcomlab/RCARAP).
+This project aims to develop a system for enabling hand gestures in a remote collaboration scenario, with a special focus on architectural design and using architectural paper plans. GECCO is a Python port of the [DCOMM system](https://github.com/snavas/DCOMM).
 
 ## Dependencies
 - numpy
