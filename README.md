@@ -3,7 +3,7 @@
 
 <div align="center">
   
-  Gesture-Enabled Remote Communication and Collaboration 
+  **Gesture-Enabled Remote Communication and Collaboration** 
   
   ![Demo](https://snavas.github.io/img/image4.gif)
 
