@@ -11,7 +11,7 @@ This project aims to develop a system for enabling hand gestures in a remote col
 
 ## Requirements
 - [pyrealsense2](https://github.com/IntelRealSense/librealsense/tree/master/wrappers/python)
-GECCO is implemented to work by default using Intel Real Sense D415 and D430 sensors. Pyrealsense2 package is our official wrapper which does support SDK 2.0. You can install pyrealsense via pip if using a Python version up to 3.7.
+GECCO is implemented to work by default using Intel Real Sense D415 and D430 sensors. The pyrealsense2 package is Intel's RealSense SDK 2.0 python wrapper. You can install pyrealsense via pip if using a Python version up to 3.7.
 ```
 pip install pyrealsense2
 ```
