@@ -11,6 +11,7 @@ This project aims to develop a system for enabling hand gestures in a remote col
 
 ## Requirements
 - [pyrealsense2](https://github.com/IntelRealSense/librealsense/tree/master/wrappers/python)
+
 GECCO is implemented to work by default using Intel Real Sense D415 and D430 sensors. The pyrealsense2 package is Intel's RealSense SDK 2.0 python wrapper. You can install pyrealsense via pip if using a Python version up to 3.7.
 ```
 pip install pyrealsense2
@@ -20,11 +21,11 @@ Otherwise, windows users can install the RealSense SDK 2.0 from the release tab 
 https://github.com/IntelRealSense/librealsense/tree/master/wrappers/python#building-from-source.
 
 ## Dependencies
-- numpy
+- [numpy](https://github.com/begeistert/nupy)
 ```
 pip install numpy
 ```
-- opencv
+- [opencv](https://github.com/skvark/opencv-python)
 ```
 pip install opencv-contrib-python==4.2.0.34
 ```
@@ -39,7 +40,7 @@ cd vidgear
 git checkout testing
 pip install .[asyncio]           # installs all required dependencies including asyncio 
 ```
-- sklearn
+- [sklearn](https://github.com/scikit-learn/scikit-learn)
 ```
 pip install sklearn
 ```
