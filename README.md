@@ -1,4 +1,4 @@
-# GECCO
+![GECCO](https://snavas.github.io/img/GECCO.png)
 Gesture-Enabled Remote Communication and Collaboration
 
 <div align="center">
