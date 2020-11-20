@@ -26,9 +26,13 @@ pip install numpy
 ```
 - opencv
 ```
-pip install opencv-contrib-python
+pip install opencv-contrib-python==4.2.0.34
 ```
 - [vidgear (asyncio)](https://github.com/abhiTronix/vidgear)
+```
+pip install vidgear[asyncio]           # installs all required dependencies including asyncio 
+```
+Old (deprecated) way:
 ```
 git clone https://github.com/abhiTronix/vidgear.git
 cd vidgear
