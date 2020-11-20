@@ -1,8 +1,9 @@
 ![GECCO](https://snavas.github.io/img/GECCO.png)
 #
-Gesture-Enabled Remote Communication and Collaboration 
 
 <div align="center">
+  
+  Gesture-Enabled Remote Communication and Collaboration 
   
   ![Demo](https://snavas.github.io/img/image4.gif)
 
