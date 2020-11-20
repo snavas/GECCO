@@ -1,5 +1,4 @@
 ![GECCO](https://snavas.github.io/img/GECCO.png)
-#
 
 <div align="center">
   
