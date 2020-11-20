@@ -3,11 +3,14 @@
 
 <div align="center">
  Gesture-Enabled Remote Communication and Collaboration 
- <br>
- ![Demo](https://snavas.github.io/img/image4.gif)
 </div>
 
 This project aims to develop a system for enabling hand gestures in a remote collaboration scenario, with a special focus on architectural design and urban planing. GECCO is a Python port of the [DCOMM system](https://github.com/snavas/DCOMM).
+
+<div align="center">
+ Gesture-Enabled Remote Communication and Collaboration 
+ ![Demo](https://snavas.github.io/img/image4.gif)
+</div>
 
 ## Requirements
 - [pyrealsense2](https://github.com/IntelRealSense/librealsense/tree/master/wrappers/python)
