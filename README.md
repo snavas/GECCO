@@ -35,7 +35,7 @@ pip install opencv-contrib-python==4.2.0.32
 ```
 - [vidgear (asyncio)](https://github.com/abhiTronix/vidgear)
 ```
-pip install vidgear[asyncio]==0.1.8 # installs all required dependencies including asyncio 
+pip install vidgear[asyncio]==0.1.8 
 ```
 Old (deprecated) way:
 ```
