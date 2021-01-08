@@ -6,7 +6,7 @@
   **Gesture-Enabled Remote Communication and Collaboration** 
   
   ![Demo](https://snavas.github.io/img/image4.gif)
-  
+  <br>
   [debug view](https://snavas.github.io/img/ezgif-4-2da419ef8f6e.gif)
 
 </div>
