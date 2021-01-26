@@ -50,6 +50,10 @@ pip install .[asyncio]           # installs all required dependencies including 
 ```
 pip install sklearn
 ```
+- [pywin32](https://github.com/mhammond/pywin32)
+```
+pip install pywin32
+```
 
 
 ## Installation
