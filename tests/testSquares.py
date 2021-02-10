@@ -74,10 +74,14 @@ def main():
             res = cv2.bitwise_and(image3, image3, mask=mask)
 
             imgray = cv2.cvtColor(res, cv2.COLOR_BGR2GRAY)
-            blurred = cv2.GaussianBlur(imgray, (5, 5), 0)
-            ret, thresholded = cv2.threshold(blurred, 50, 255, 0)
+            #blurred = cv2.GaussianBlur(imgray, (5, 5), 0)
+            #ret, thresholded = cv2.threshold(blurred, 50, 255, 0)
 
-            contours, h = cv2.findContours(thresholded, 1, 2)
+            ret, thresholded = cv2.threshold(imgray, 0, 255, cv2.THRESH_BINARY)
+            opening = cv2.morphologyEx(thresholded, cv2.MORPH_OPEN, (12,12))
+            blurred = cv2.blur(opening,(4,4))
+
+            contours, h = cv2.findContours(blurred, 1, 2)
 
             edges = cv2.Canny(thresholded, 66, 133, 3)
             lines = cv2.HoughLines(edges, 1, CV_PI/180, 50, 0, 0)

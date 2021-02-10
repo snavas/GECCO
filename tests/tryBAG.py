@@ -20,11 +20,19 @@ import math
 import time
 
 def unit_vector(vector):
-    #Returns the unit vector of the vector.º
+    """ Returns the unit vector of the vector.  """
     return vector / np.linalg.norm(vector)
 
 def angle_between(v1, v2):
-    #Returns the angle in radians between vectors 'v1' and 'v2'::
+    """ Returns the angle in radians between vectors 'v1' and 'v2'::
+
+            >>> angle_between((1, 0, 0), (0, 1, 0))
+            1.5707963267948966
+            >>> angle_between((1, 0, 0), (1, 0, 0))
+            0.0
+            >>> angle_between((1, 0, 0), (-1, 0, 0))
+            3.141592653589793
+    """
     v1_u = unit_vector(v1)
     v2_u = unit_vector(v2)
     return np.arccos(np.clip(np.dot(v1_u, v2_u), -1.0, 1.0))
@@ -80,8 +88,7 @@ def id_to_random_color(number):
         return(255,255,255)
 
 def main():
-    device = RealSense('C:/Users/s_nava02/sciebo/GECCO/pinktest.bag')
-    file = True
+    device = RealSense("1234")
     #print("Color intrinsics: ", device.getcolorintrinsics())
     #print("Depth intrinsics: ", device.getdepthintrinsics())
     # Initiate ORB detector
@@ -90,8 +97,6 @@ def main():
     try:
         while True:
             image = device.getcolorstream()
-            if file:
-                image = cv2.cvtColor(image, cv2.COLOR_RGB2BGR)
             depth = device.getdepthstream()
             #image = cv2.imread("D:/Users/s_nava02/Desktop/raw_output.png")
             screenshot = image.copy()
@@ -231,8 +236,8 @@ def main():
                 print(len(fingers))
                 for f in fingers:
                     cv2.circle(image, (f[0], f[1]), 4, (255, 255, 255)) # identified finger: white
-                    #print("image size: ", image.shape)
-                    #print("color pixel value of ", f, ":", image[f[0]][f[1]])
+                    print("image size: ", image.shape)
+                    print("color pixel value of ", f, ":", image[f[0]][f[1]])
                     pass
 
             # Show images

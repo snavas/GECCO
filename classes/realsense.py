@@ -20,22 +20,35 @@ class RealSense(Device):
         print("<*> Connected devices: ")
         print(*devices, sep="\n")
 
+        # TODO: Posible improvement to better query devices:
+        #>> > d = ctx.load_device("C:\\Users\\local_admin\\Documents\\20180212_000327.bag")
+        #>> > s = d.query_sensors()[0]
+        #>> > s.get_stream_profiles()[0]
+
         # Configure depth and color streams
         self.pipeline = rs.pipeline()
         config = rs.config()
-        #config.enable_device(id)
-        #print("<*> Using device: ", id)
-        print("<*> Using device: ", devices[0])
-        #for sensor in devices[0].query_sensors():
-        #    print(sensor)
-        if "D415" in str(devices[0]):
-            #print("Resolution: 1280x720")
-            config.enable_stream(rs.stream.depth, 1280, 720, rs.format.z16, 30)
-            config.enable_stream(rs.stream.color, 1280, 720, rs.format.bgr8, 30)
+        if len(devices) > 0:
+            print("<*> Using device: ", devices[0])
+            #for sensor in devices[0].query_sensors():
+            #    print(sensor)
+            if "D415" in str(devices[0]):
+                #print("Resolution: 1280x720")
+                config.enable_stream(rs.stream.depth, 1280, 720, rs.format.z16, 30)
+                config.enable_stream(rs.stream.color, 1280, 720, rs.format.bgr8, 30)
+            elif "D435" in str(devices[0]):
+                #print("Resolution: 848x480")
+                config.enable_stream(rs.stream.depth, 848, 480, rs.format.z16, 30)
+                config.enable_stream(rs.stream.color, 848, 480, rs.format.bgr8, 30)
+            else:
+                print("DEVICE NOT COMPATIBLE")
         else:
-            #print("Resolution: 848x480")
-            config.enable_stream(rs.stream.depth, 848, 480, rs.format.z16, 30)
-            config.enable_stream(rs.stream.color, 848, 480, rs.format.bgr8, 30)
+            print("<*> Realsense device not found, loading: ", id)
+            # Tell config that we will use a recorded device from filem to be used by the pipeline through playback.
+            rs.config.enable_device_from_file(config, id)
+            config.enable_stream(rs.stream.color, 1280, 720, rs.format.rgb8, 30)
+            config.enable_stream(rs.stream.depth, 1280, 720, rs.format.z16, 30)
+
         # Start streaming
         profile = self.pipeline.start(config)
         self.color_intr = profile.get_stream(rs.stream.color).as_video_stream_profile().get_intrinsics()

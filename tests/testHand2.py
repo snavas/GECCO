@@ -81,7 +81,7 @@ def id_to_random_color(number):
 
 def main():
     device = RealSense('C:/Users/s_nava02/sciebo/GECCO/pinktest.bag')
-    file = True
+    file = False
     #print("Color intrinsics: ", device.getcolorintrinsics())
     #print("Depth intrinsics: ", device.getdepthintrinsics())
     # Initiate ORB detector
@@ -174,11 +174,11 @@ def main():
                 c = 0
                 for p in hull:
                     # print("init ", p, " - ")
-                    # cv2.circle(image, tuple(p[0]), 10, id_to_random_color(clustering.labels_[c]))
+                    cv2.circle(image, tuple(p[0]), 10, id_to_random_color(clustering.labels_[c]))
                     c += 1
-                #for p in centers:
+                for p in centers:
                     #print("init ", p[0], " - ")
-                    #cv2.circle(image, (p[0],p[1]), 4, (0, 255, 255))
+                    cv2.circle(image, (p[0],p[1]), 4, (0, 255, 255))
                     #pass
                 for p in centers:
                     # cv2.circle(image, (int(p[0]), int(p[1])), 4, (0, 255, 255))
@@ -188,7 +188,7 @@ def main():
                 ###############################################################
                 # get neighbor defect points of each hull point
                 hullPointDefectNeighbors = [] # 0: start, 1: end, 2:defect
-                print("defects.shape[0]: ",defects.shape[0])
+                #print("defects.shape[0]: ",defects.shape[0])
                 for x in range(defects.shape[0]):
                     s, e, f, d = defects[x, 0]
                     start = tuple(cnt[s][0])
@@ -217,7 +217,7 @@ def main():
                     v_cp_ld = (ld[0] - cf[0], ld[1] - cf[1])
                     v_cp_rd = (rd[0] - cf[0], rd[1] - cf[1])
                     beta = angle_between(v_cp_ld, v_cp_rd)
-                    print(beta)
+                    #print(beta)
                     cv2.circle(image, (cf[0], cf[1]), 4, (0, 0, 255)) # candidate finger: red
                     cv2.circle(image, (rd[0], rd[1]), 4, (255, 0, 0)) # right defect: blue
                     cv2.circle(image, (ld[0], ld[1]), 4, (255, 0, 0)) # left defect: blue
@@ -228,7 +228,7 @@ def main():
                     #            math.atan2(cf[1] - ld[1], cf[0] - ld[0]) < maxAngleDeg) and len(fingers) < 5:
                     #    fingers.append(triple[0])
                     i += 1
-                print(len(fingers))
+                #print(len(fingers))
                 for f in fingers:
                     cv2.circle(image, (f[0], f[1]), 4, (255, 255, 255)) # identified finger: white
                     #print("image size: ", image.shape)
