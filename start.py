@@ -16,6 +16,7 @@ import win32api
 import win32con
 import win32gui
 from win32api import GetSystemMetrics
+import traceback
 
 HostPort = 5555
 PeerAddress = "localhost"
@@ -142,7 +143,7 @@ async def custom_frame_generator():
         # close file
         log.close()
     except Exception as e:
-        print(bcolors.FAIL+e+bcolors.ENDC)
+        print(bcolors.FAIL + traceback.format_exc() + bcolors.ENDC)
     finally:
         log.flush()
         print(bcolors.OKGREEN+"\n Session log saved: "+log.name+"\n"+bcolors.WARNING)
@@ -163,7 +164,7 @@ async def client_iterator(client):
             hwnd = win32gui.FindWindow(None, "Output Frame")
             win32gui.SetWindowLong(hwnd, win32con.GWL_EXSTYLE, win32gui.GetWindowLong(hwnd, win32con.GWL_EXSTYLE) | win32con.WS_EX_LAYERED)  # no idea, but it goes together with transparency
             win32gui.SetLayeredWindowAttributes(hwnd, win32api.RGB(0, 0, 0), 0, win32con.LWA_COLORKEY)  # black as transparent
-            win32gui.SetWindowPos(hwnd, win32con.HWND_TOPMOST, -5, -5, GetSystemMetrics(0), GetSystemMetrics(1), 0)  # always on top
+            win32gui.SetWindowPos(hwnd, win32con.HWND_TOPMOST, 0, 0, GetSystemMetrics(0), GetSystemMetrics(1), 0)  # always on top
             win32gui.ShowWindow(hwnd, win32con.SW_MAXIMIZE)  # maximiced
         key = cv2.waitKey(1) & 0xFF
         # await before continuing
