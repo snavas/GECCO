@@ -23,7 +23,7 @@ PeerPort = 5555
 calibrationMatrix = []
 oldCalibration = False
 overlay = True
-#File = 'material/pinktest.bag'
+DeviceSrc = "752112070204"
 #fileFlag = True
 
 # Create a async frame generator as custom source
@@ -33,8 +33,7 @@ async def custom_frame_generator():
         global log
         tabledistance = 1200 # Default distance to table
         # Open video stream
-        device = RealSense("752112070204")
-        # device = RealSense(File)
+        device = RealSense(DeviceSrc)
         # loop over stream until its terminated
         while True:
             ########################
@@ -195,29 +194,33 @@ async def netgear_async_playback(pattern):
 
 def getOptions(args=sys.argv[1:]):
     parser = argparse.ArgumentParser(description="PyMote")
-    parser.add_argument("-s", "--standalone", help="Standalone Mode")
+    parser.add_argument("-s", "--standalone", help="Standalone Mode", action='store_true')
     parser.add_argument("-o", "--host", type=int, help="Host port number")
     parser.add_argument("-a", "--address", help="Peer IP address")
     parser.add_argument("-p", "--port", type=int, help="Peer port number")
     parser.add_argument("-f", "--file", help="Simulate camera sensor from .bag file")
-    #parser.add_argument("-f", "--file", help="Simulate camera sensor from .bag file")
     #parser.add_argument("-v", "--verbose",dest='verbose',action='store_true', help="Verbose mode.")
     options = parser.parse_args(args)
     return options
 
 if __name__ == '__main__':
     options = getOptions(sys.argv[1:])
-    if options.host:
-        HostPort = options.host
-    if options.address:
-        PeerAddress = options.address
-    if options.port:
-        PeerPort = options.port
+    # configure network
     if options.standalone:
         HostPort = 5555
         PeerAddress = "localhost"
         PeerPort = 5555
-    #if options.file:
-    #    File = options.file
+    else:
+        if options.host:
+            HostPort = options.host
+        if options.address:
+            PeerAddress = options.address
+        if options.port:
+            PeerPort = options.port
+
+    # configure Realsense device
+    if options.file:
+        DeviceSrc = options.file
+
     log = open("logs/log_"+str(int(time.time()))+".log", "x")
     asyncio.run(netgear_async_playback(options))
