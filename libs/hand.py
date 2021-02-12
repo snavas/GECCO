@@ -69,7 +69,7 @@ def getHand(colorframe, depthframe, depthscale):
         try:
             defects = cv2.convexityDefects(cnt, centers[:, 2])
         except Exception as e:
-            print("the convex hull indices are not monotonous")
+            print("convexity defects could not be determined")
             defects = np.array([])
         return defects
 
