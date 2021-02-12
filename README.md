@@ -33,7 +33,7 @@ pip install numpy
 ```
 - [opencv](https://github.com/skvark/opencv-python)
 ```
-pip install opencv-contrib-python==4.2.0.32
+pip install opencv-contrib-python==4.3.0.36
 ```
 - [vidgear (asyncio)](https://github.com/abhiTronix/vidgear)
 ```
