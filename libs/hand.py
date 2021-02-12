@@ -65,7 +65,12 @@ def getHand(colorframe, depthframe, depthscale):
         clustering = DBSCAN(eps=5, min_samples=1).fit(hull[:, 0])
         rhull = np.column_stack((hull[:, 0], index[:, 0]))
         centers = utils.groupPointsbyLabels(rhull, clustering.labels_)
-        defects = cv2.convexityDefects(cnt, np.array(centers)[:, 2])
+        centers = np.array(centers)[np.array(centers)[:, 2].argsort()]
+        try:
+            defects = cv2.convexityDefects(cnt, centers[:, 2])
+        except Exception as e:
+            print("convexity defects could not be determined")
+            defects = np.array([])
         return defects
 
     def getHullVertices(defects, contour):
