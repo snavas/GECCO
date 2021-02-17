@@ -17,7 +17,13 @@ import win32con
 import win32gui
 from win32api import GetSystemMetrics
 import traceback
+import cv2
+import mediapipe as mp
+mp_drawing = mp.solutions.drawing_utils
+mp_hands = mp.solutions.hands
 
+handsMP = mp_hands.Hands(
+    min_detection_confidence=0.5, min_tracking_confidence=0.5)
 HostPort = 5555
 PeerAddress = "localhost"
 PeerPort = 5555
@@ -64,6 +70,8 @@ async def custom_frame_generator():
                 else:
                     oldCalibration = False
                 calibrationMatrix = newcalibrationMatrix
+            else:
+                frame = colorframe
             if len(calibrationMatrix) == 4:
                 #print(depthframe[int(calibrationMatrix[0][1])][int(calibrationMatrix[0][0])])
                 #print("newtabledistance = ", depthframe[calibrationMatrix[0][1]][calibrationMatrix[0][0]])
@@ -87,6 +95,8 @@ async def custom_frame_generator():
                 depthframe = depthframe[int(miny):int(miny + height), int(minx):int(minx + width)]
                 depthframe = cv2.resize(depthframe,(1280, 720)) #TODO: Necessary? Might affect network performance
                 #print(calibrationMatrix)
+
+                resultsMP = handsMP.process(colorframe)
 
                 ########################
                 # Hand Detection       #
@@ -136,6 +146,13 @@ async def custom_frame_generator():
                     #frame = colorframe
                     #cv2.putText(frame, "CALIBRATED (4)", (25, 25), cv2.FONT_HERSHEY_SIMPLEX, 0.25, (0, 0, 255), 1, cv2.LINE_AA)
                     #cv2.putText(frame, "NOT CALIBRATED", (25, 25), cv2.FONT_HERSHEY_SIMPLEX, 0.25, (0, 0, 255), 1, cv2.LINE_AA)
+
+                if resultsMP.multi_hand_landmarks:
+                    colorframe.flags.writeable = True
+                    for hand_landmarks in resultsMP.multi_hand_landmarks:
+                        mp_drawing.draw_landmarks(
+                            frame, hand_landmarks, mp_hands.HAND_CONNECTIONS)
+
             # frame = reducer(frame, percentage=40)  # reduce frame by 40%
             # yield frame
             yield frame
