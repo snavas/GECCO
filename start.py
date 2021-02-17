@@ -25,7 +25,7 @@ calibrationMatrix = []
 oldCalibration = False
 continuousCalibration = False
 overlay = True
-DeviceSrc = "C:/Users/s_nava02/Documents/GECCO/20210217_113804.bag"
+DeviceSrc = "752112070204"
 #fileFlag = True
 
 # Create a async frame generator as custom source
@@ -35,7 +35,7 @@ async def custom_frame_generator():
         global log
         tabledistance = 1200 # Default distance to table
         # Open video stream
-        device = RealSense("C:/Users/s_nava02/Documents/GECCO/20210217_113804.bag")
+        device = RealSense(DeviceSrc)
         # loop over stream until its terminated
         while True:
             ########################
