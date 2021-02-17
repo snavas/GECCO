@@ -24,7 +24,7 @@ PeerPort = 5555
 calibrationMatrix = []
 oldCalibration = False
 overlay = True
-DeviceSrc = "752112070204"
+DeviceSrc = "C:/Users/s_nava02/Documents/GECCO/20210217_113804.bag"
 #fileFlag = True
 
 # Create a async frame generator as custom source
@@ -34,7 +34,7 @@ async def custom_frame_generator():
         global log
         tabledistance = 1200 # Default distance to table
         # Open video stream
-        device = RealSense(DeviceSrc)
+        device = RealSense("C:/Users/s_nava02/Documents/GECCO/20210217_113804.bag")
         # loop over stream until its terminated
         while True:
             ########################
@@ -90,8 +90,9 @@ async def custom_frame_generator():
                 # Hand Detection       #
                 ########################
                 result, hands, points = hand.getHand(colorframe, depthframe, device.getdepthscale())
-                drawings = draw.getDraw(colorframe)
-                frame = cv2.bitwise_or(result, drawings)
+                #drawings = draw.getDraw(colorframe)
+                #frame = cv2.bitwise_or(result, drawings)
+                frame = result
                 # Altering hand colors (to avoid feedback loop
                 # Option 1: Inverting the picture
                 frame = cv2.bitwise_not(frame)
