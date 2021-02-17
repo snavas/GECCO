@@ -23,6 +23,7 @@ PeerAddress = "localhost"
 PeerPort = 5555
 calibrationMatrix = []
 oldCalibration = False
+continuousCalibration = False
 overlay = True
 DeviceSrc = "C:/Users/s_nava02/Documents/GECCO/20210217_113804.bag"
 #fileFlag = True
@@ -56,12 +57,13 @@ async def custom_frame_generator():
             ########################
             global calibrationMatrix
             global oldCalibration
-            frame, newcalibrationMatrix = cal.calibrateViaARUco(colorframe, depthframe, calibrationMatrix)
-            if calibrationMatrix == newcalibrationMatrix:
-                oldCalibration = True
-            else:
-                oldCalibration = False
-            calibrationMatrix = newcalibrationMatrix
+            if continuousCalibration == False and len(calibrationMatrix) != 4:
+                frame, newcalibrationMatrix = cal.calibrateViaARUco(colorframe, depthframe, calibrationMatrix)
+                if calibrationMatrix == newcalibrationMatrix:
+                    oldCalibration = True
+                else:
+                    oldCalibration = False
+                calibrationMatrix = newcalibrationMatrix
             if len(calibrationMatrix) == 4:
                 #print(depthframe[int(calibrationMatrix[0][1])][int(calibrationMatrix[0][0])])
                 #print("newtabledistance = ", depthframe[calibrationMatrix[0][1]][calibrationMatrix[0][0]])
