@@ -12,10 +12,6 @@ import cv2, asyncio
 import argparse
 import sys
 import time
-import win32api
-import win32con
-import win32gui
-from win32api import GetSystemMetrics
 import traceback
 
 HostPort = 5555
@@ -24,12 +20,11 @@ PeerPort = 5555
 calibrationMatrix = []
 oldCalibration = False
 continuousCalibration = False
-overlay = True
 DeviceSrc = "C:/Users/s_nava02/Documents/GECCO/20210217_113804.bag"
 #fileFlag = True
 
+# initialize Server
 server = NetGear_Async(logging=True)
-client = NetGear_Async(receive_mode=True, logging=True)
 
 # Create a async frame generator as custom source
 async def custom_frame_generator():
@@ -156,114 +151,20 @@ async def custom_frame_generator():
         log.close()
         device.stop()
 
-# Create a async function where you want to show/manipulate your received frames
-async def client_iterator(client):
-    # loop over Client's Asynchronous Frame Generator
-    cv2.namedWindow("Output Frame", cv2.WND_PROP_FULLSCREEN)
-    cv2.setWindowProperty("Output Frame", cv2.WND_PROP_FULLSCREEN, cv2.WINDOW_NORMAL)
-    async for frame in client.recv_generator():
-        # do something with received frames here
-        # print("frame recieved")
-        # Show output window
-        cv2.imshow("Output Frame", frame)
-        if overlay:
-            hwnd = win32gui.FindWindow(None, "Output Frame")
-            win32gui.SetWindowLong(hwnd, win32con.GWL_EXSTYLE, win32gui.GetWindowLong(hwnd, win32con.GWL_EXSTYLE) | win32con.WS_EX_LAYERED)  # no idea, but it goes together with transparency
-            win32gui.SetLayeredWindowAttributes(hwnd, win32api.RGB(0, 0, 0), 0, win32con.LWA_COLORKEY)  # black as transparent
-            win32gui.SetWindowPos(hwnd, win32con.HWND_TOPMOST, 0, 0, GetSystemMetrics(0), GetSystemMetrics(1), 0)  # always on top
-            win32gui.ShowWindow(hwnd, win32con.SW_MAXIMIZE)  # maximiced
-        key = cv2.waitKey(1) & 0xFF
-        # await before continuing
-        await asyncio.sleep(0.00001)
-
-async def netgear_async_playback(pattern):
-    try:
-        # define and launch Client with `receive_mode = True`
-        # options = {'compression_param': cv2.IMREAD_COLOR}
-        client = NetGear_Async(
-            port = HostPort, pattern=1, receive_mode=True#, **options
-        ).launch()
-        # options = {'compression_format': '.jpg', 'compression_param': [cv2.IMWRITE_JPEG_QUALITY, 50]}
-        server = NetGear_Async(
-            address = PeerAddress, port = PeerPort, pattern=1#, **options
-        )
-        server.config["generator"] = custom_frame_generator()
-        server.launch()
-        # gather and run tasks
-        input_coroutines = [server.task, client_iterator(client)]
-        res = await asyncio.gather(*input_coroutines, return_exceptions=True)
-    except Exception as e:
-        print(e)
-        pass
-    finally:
-        server.close(skip_loop=True)
-        client.close(skip_loop=True)
-
-# Create a async function where you want to show/manipulate your received frames
-async def main():
-    cv2.namedWindow("Output Frame", cv2.WND_PROP_FULLSCREEN)
-    cv2.setWindowProperty("Output Frame", cv2.WND_PROP_FULLSCREEN, cv2.WINDOW_NORMAL)
-    # loop over Client's Asynchronous Frame Generator
-    async for frame in client.recv_generator():
-        # {do something with received frames here}
-        # Show output window
-        cv2.imshow("Output Frame", frame)
-        if overlay:
-            hwnd = win32gui.FindWindow(None, "Output Frame")
-            win32gui.SetWindowLong(hwnd, win32con.GWL_EXSTYLE, win32gui.GetWindowLong(hwnd, win32con.GWL_EXSTYLE) | win32con.WS_EX_LAYERED)  # no idea, but it goes together with transparency
-            win32gui.SetLayeredWindowAttributes(hwnd, win32api.RGB(0, 0, 0), 0, win32con.LWA_COLORKEY)  # black as transparent
-            win32gui.SetWindowPos(hwnd, win32con.HWND_TOPMOST, 0, 0, GetSystemMetrics(0), GetSystemMetrics(1), 0)  # always on top
-            win32gui.ShowWindow(hwnd, win32con.SW_MAXIMIZE)  # maximiced
-        key = cv2.waitKey(1) & 0xFF
-        # await before continuing
-        await asyncio.sleep(0.01)
-
-def getOptions(args=sys.argv[1:]):
-    parser = argparse.ArgumentParser(description="PyMote")
-    parser.add_argument("-s", "--standalone", help="Standalone Mode", action='store_true')
-    parser.add_argument("-o", "--host", type=int, help="Host port number")
-    parser.add_argument("-a", "--address", help="Peer IP address")
-    parser.add_argument("-p", "--port", type=int, help="Peer port number")
-    parser.add_argument("-f", "--file", help="Simulate camera sensor from .bag file")
-    #parser.add_argument("-v", "--verbose",dest='verbose',action='store_true', help="Verbose mode.")
-    options = parser.parse_args(args)
-    return options
-
-if __name__ == '__main__':
-    options = getOptions(sys.argv[1:])
-    # configure network
-    if options.standalone:
-        HostPort = 5555
-        PeerAddress = "localhost"
-        PeerPort = 5555
-    else:
-        if options.host:
-            HostPort = options.host
-        if options.address:
-            PeerAddress = options.address
-        if options.port:
-            PeerPort = options.port
-
-    # configure Realsense device
-    if options.file:
-        DeviceSrc = options.file
-
-    log = open("logs/log_"+str(int(time.time()))+".log", "x")
-    #asyncio.run(netgear_async_playback(options))
-
+if __name__ == "__main__":
+    log = open("logs/log_" + str(int(time.time())) + ".log", "x")
+    # set event loop
     asyncio.set_event_loop(server.loop)
-    asyncio.set_event_loop(client.loop)
+    # Add your custom source generator to Server configuration
     server.config["generator"] = custom_frame_generator()
+    # Launch the Server
     server.launch()
-    client.launch()
     try:
         # run your main function task until it is complete
         server.loop.run_until_complete(server.task)
-        client.loop.run_until_complete(main())
     except (KeyboardInterrupt, SystemExit):
         # wait for interrupts
         pass
     finally:
         # finally close the server
         server.close()
-        client.close()
