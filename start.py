@@ -6,6 +6,7 @@ from classes.bcolors import bcolors
 import libs.hand as hand
 import libs.draw as draw
 import libs.calibration as cal
+import libs.detectPink as pink
 import libs.utils as utils
 import numpy as np
 import cv2, asyncio
@@ -64,6 +65,9 @@ async def custom_frame_generator():
                 else:
                     oldCalibration = False
                 calibrationMatrix = newcalibrationMatrix
+            else:
+                frame = colorframe
+
             if len(calibrationMatrix) == 4:
                 #print(depthframe[int(calibrationMatrix[0][1])][int(calibrationMatrix[0][0])])
                 #print("newtabledistance = ", depthframe[calibrationMatrix[0][1]][calibrationMatrix[0][0]])
