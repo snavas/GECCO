@@ -6,7 +6,6 @@ from classes.bcolors import bcolors
 import libs.hand as hand
 import libs.draw as draw
 import libs.calibration as cal
-import libs.detectPink as pink
 import libs.utils as utils
 import numpy as np
 import cv2, asyncio

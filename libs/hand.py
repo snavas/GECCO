@@ -1,7 +1,7 @@
 import cv2
 import numpy as np
 import copy
-import detectPink as pink
+import libs.detectPink as pink
 
 # Source: https://medium.com/@muehler.v/simple-hand-gesture-recognition-using-opencv-and-javascript-eb3d6ced28a0
 
@@ -14,7 +14,7 @@ def angle(vector1, vector2):
     length2 = math.sqrt(vector2[0] * vector2[0] + vector2[1] * vector2[1])
     return math.acos((vector1[0] * vector2[0] + vector1[1] * vector2[1])/ (length1 * length2))
 
-def getHand(colorframe, depthframe, depthscale, lower_pink, upper_pink):
+def getHand(colorframe, depthframe, depthscale):
     def gethandmask(img):
         # Convert BGR to HSV
         hsv = cv2.cvtColor(img, cv2.COLOR_BGR2HSV)
