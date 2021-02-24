@@ -9,6 +9,9 @@ import math
 from sklearn.cluster import DBSCAN
 import libs.utils as utils
 
+lower_pink = np.array([110, 80, 80])
+upper_pink = np.array([170, 255, 255])
+
 def angle(vector1, vector2):
     length1 = math.sqrt(vector1[0] * vector1[0] + vector1[1] * vector1[1])
     length2 = math.sqrt(vector2[0] * vector2[0] + vector2[1] * vector2[1])
@@ -23,9 +26,8 @@ def getHand(colorframe, depthframe, depthscale):
         # lower_pink = np.array([140, 0.1 * 255, 0.05 * 255])
         # upper_pink = np.array([170, 0.8 * 255, 0.6 * 255])
         # Todo: New approach, still not working as good as javascript RCARAP, it needs to be refined later
-        lower_pink = np.array([110, 80, 80])
-        upper_pink = np.array([170, 255, 255])
-        lower_pink, upper_pink = pink.detectPink(colorframe, lower_pink, upper_pink)
+        global lower_pink, upper_pink
+        lower_pink,upper_pink = pink.detectPink(colorframe, lower_pink, upper_pink)
         # Threshold the HSV image to get only pink colors
         mask = cv2.inRange(hsv, lower_pink, upper_pink)
         # Bitwise-AND mask and original image
