@@ -34,8 +34,9 @@ def detectPink(colorframe, lower_pink, upper_pink):
                 c = corners[i][0]
                 colorMarkersLower.append(c)
     colorframe = cv2.cvtColor(colorframe, cv2.COLOR_BGR2HSV)
-    if len(colorMarkersUpper) == 2 & len(colorMarkersLower) == 2:
-        lower_pink = getColorBetweenMarkers(colorframe, colorMarkersLower)
+    if len(colorMarkersUpper) == 2:
         upper_pink = getColorBetweenMarkers(colorframe, colorMarkersUpper)
+    if len(colorMarkersLower) == 2:
+        lower_pink = getColorBetweenMarkers(colorframe, colorMarkersLower)
 
     return lower_pink, upper_pink
