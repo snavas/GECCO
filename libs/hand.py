@@ -17,7 +17,7 @@ def angle(vector1, vector2):
     length2 = math.sqrt(vector2[0] * vector2[0] + vector2[1] * vector2[1])
     return math.acos((vector1[0] * vector2[0] + vector1[1] * vector2[1])/ (length1 * length2))
 
-def getHand(colorframe, depthframe, depthscale):
+def getHand(colorframe, uncaliColorframe, depthframe, uncaliDepthframe, depthscale):
     def gethandmask(img):
         # Convert BGR to HSV
         hsv = cv2.cvtColor(img, cv2.COLOR_BGR2HSV)
@@ -27,7 +27,7 @@ def getHand(colorframe, depthframe, depthscale):
         # upper_pink = np.array([170, 0.8 * 255, 0.6 * 255])
         # Todo: New approach, still not working as good as javascript RCARAP, it needs to be refined later
         global lower_pink, upper_pink
-        lower_pink,upper_pink = pink.detectPink(colorframe, lower_pink, upper_pink)
+        lower_pink,upper_pink = pink.detectPink(uncaliColorframe, lower_pink, upper_pink)
         # Threshold the HSV image to get only pink colors
         mask = cv2.inRange(hsv, lower_pink, upper_pink)
         # Bitwise-AND mask and original image

@@ -85,16 +85,18 @@ async def custom_frame_generator():
                 width = (maxx - minx)
                 # TODO: Are colorframe and depthframe totally aligned? E.g. same dimmensions¿?
                 # print(len(colorframe), " ", len(depthframe)) #TODO: Same dimmensions, hopefully aligned
-                colorframe = colorframe[int(miny):int(miny + height), int(minx):int(minx + width)]
-                colorframe = cv2.resize(colorframe,(1280, 720)) #TODO: Necessary? Might affect network performance
-                depthframe = depthframe[int(miny):int(miny + height), int(minx):int(minx + width)]
-                depthframe = cv2.resize(depthframe,(1280, 720)) #TODO: Necessary? Might affect network performance
+                caliColorframe = colorframe[int(miny):int(miny + height), int(minx):int(minx + width)]
+                caliColorframe = cv2.resize(caliColorframe,(1280, 720)) #TODO: Necessary? Might affect network performance
+                caliDepthframe = depthframe[int(miny):int(miny + height), int(minx):int(minx + width)]
+                caliDepthframe = cv2.resize(caliDepthframe,(1280, 720)) #TODO: Necessary? Might affect network performance
+
+
                 #print(calibrationMatrix)
 
                 ########################
                 # Hand Detection       #
                 ########################
-                result, hands, points = hand.getHand(colorframe, depthframe, device.getdepthscale())
+                result, hands, points = hand.getHand(caliColorframe, colorframe, caliDepthframe, depthframe, device.getdepthscale())
                 #drawings = draw.getDraw(colorframe)
                 #frame = cv2.bitwise_or(result, drawings)
                 frame = result
