@@ -68,25 +68,30 @@ async def custom_frame_generator():
                 #print(depthframe[int(calibrationMatrix[0][1])][int(calibrationMatrix[0][0])])
                 #print("newtabledistance = ", depthframe[calibrationMatrix[0][1]][calibrationMatrix[0][0]])
                 tabledistance = depthframe[int(calibrationMatrix[0][1])][int(calibrationMatrix[0][0])]
-                # TODO: this solution is too simple, it needs better maths to create a more robust solution
+                # TODO: implement remapping for when the camera is at a vertical angle
                 # TODO: put all this code into a function?
-                minx = min((calibrationMatrix[0][0], calibrationMatrix[1][0], calibrationMatrix[2][0],
-                            calibrationMatrix[3][0]))
-                miny = min((calibrationMatrix[0][1], calibrationMatrix[1][1], calibrationMatrix[2][1],
-                            calibrationMatrix[3][1]))
-                maxx = max((calibrationMatrix[0][0], calibrationMatrix[1][0], calibrationMatrix[2][0],
-                            calibrationMatrix[3][0]))
-                maxy = max((calibrationMatrix[0][1], calibrationMatrix[1][1], calibrationMatrix[2][1],
-                            calibrationMatrix[3][1]))
-                height = (maxy - miny)
-                width = (maxx - minx)
-                # TODO: Are colorframe and depthframe totally aligned? E.g. same dimmensions¿?
-                # print(len(colorframe), " ", len(depthframe)) #TODO: Same dimmensions, hopefully aligned
-                colorframe = colorframe[int(miny):int(miny + height), int(minx):int(minx + width)]
-                colorframe = cv2.resize(colorframe,(1280, 720)) #TODO: Necessary? Might affect network performance
-                depthframe = depthframe[int(miny):int(miny + height), int(minx):int(minx + width)]
-                depthframe = cv2.resize(depthframe,(1280, 720)) #TODO: Necessary? Might affect network performance
-                #print(calibrationMatrix)
+                rect = cv2.minAreaRect(np.array(calibrationMatrix))
+                # the order of the box points: bottom left, top left, top right,
+                # bottom right
+                box = cv2.boxPoints(rect)
+                box = np.int0(box)
+                # get width and height of the detected rectangle
+                width = int(rect[1][0])
+                height = int(rect[1][1])
+                src_pts = box.astype("float32")
+                # coordinate of the points in box points after the rectangle has been
+                # straightened
+                dst_pts = np.array([[0, height - 1],
+                                    [0, 0],
+                                    [width - 1, 0],
+                                    [width - 1, height - 1]], dtype="float32")
+                # the perspective transformation matrix
+                M = cv2.getPerspectiveTransform(src_pts, dst_pts)
+                # directly warp the rotated rectangle to get the straightened rectangle
+                colorframe = cv2.warpPerspective(colorframe, M, (width, height))
+                colorframe = cv2.resize(colorframe, (1280, 720))  # TODO: Necessary? Might affect network performance
+                depthframe = cv2.warpPerspective(depthframe, M, (width, height))
+                depthframe = cv2.resize(depthframe, (1280, 720))  # TODO: Necessary? Might affect network performance
 
                 ########################
                 # Hand Detection       #
