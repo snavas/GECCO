@@ -21,8 +21,8 @@ import traceback
 HostPort = 5555
 PeerAddress = "localhost"
 PeerPort = 5555
-calibrationMatrix = []
-oldCalibration = False
+screen_corners = []
+target_corners = []
 continuousCalibration = False
 overlay = True
 DeviceSrc = "752112070204"
@@ -55,43 +55,18 @@ async def custom_frame_generator():
             ########################
             # Calibation           #
             ########################
-            global calibrationMatrix
-            global oldCalibration
-            if continuousCalibration == False and len(calibrationMatrix) != 4:
-                frame, newcalibrationMatrix = cal.calibrateViaARUco(colorframe, depthframe, calibrationMatrix)
-                if calibrationMatrix == newcalibrationMatrix:
-                    oldCalibration = True
-                else:
-                    oldCalibration = False
-                calibrationMatrix = newcalibrationMatrix
-            if len(calibrationMatrix) == 4:
+            global screen_corners, target_corners
+            if continuousCalibration == False and len(target_corners) != 4:
+                frame, screen_corners, target_corners = cal.calibrateViaARUco(colorframe, depthframe, screen_corners, target_corners)
+            else:
                 #print(depthframe[int(calibrationMatrix[0][1])][int(calibrationMatrix[0][0])])
                 #print("newtabledistance = ", depthframe[calibrationMatrix[0][1]][calibrationMatrix[0][0]])
-                tabledistance = depthframe[int(calibrationMatrix[0][1])][int(calibrationMatrix[0][0])]
-                # TODO: implement remapping for when the camera is at a vertical angle
-                # TODO: put all this code into a function?
-                rect = cv2.minAreaRect(np.array(calibrationMatrix))
-                # the order of the box points: bottom left, top left, top right,
-                # bottom right
-                box = cv2.boxPoints(rect)
-                box = np.int0(box)
-                # get width and height of the detected rectangle
-                width = int(rect[1][0])
-                height = int(rect[1][1])
-                src_pts = box.astype("float32")
-                # coordinate of the points in box points after the rectangle has been
-                # straightened
-                dst_pts = np.array([[0, height - 1],
-                                    [0, 0],
-                                    [width - 1, 0],
-                                    [width - 1, height - 1]], dtype="float32")
-                # the perspective transformation matrix
-                M = cv2.getPerspectiveTransform(src_pts, dst_pts)
-                # directly warp the rotated rectangle to get the straightened rectangle
-                colorframe = cv2.warpPerspective(colorframe, M, (width, height))
-                colorframe = cv2.resize(colorframe, (1280, 720))  # TODO: Necessary? Might affect network performance
-                depthframe = cv2.warpPerspective(depthframe, M, (width, height))
-                depthframe = cv2.resize(depthframe, (1280, 720))  # TODO: Necessary? Might affect network performance
+                tabledistance = depthframe[int(target_corners[0][1])][int(target_corners[0][0])]
+
+                M = cv2.getPerspectiveTransform(target_corners,screen_corners)
+                # TODO: derive resolution from width and height of original frame?
+                colorframe = cv2.warpPerspective(colorframe, M, (1280, 720))
+                depthframe = cv2.warpPerspective(depthframe, M, (1280, 720))
 
                 ########################
                 # Hand Detection       #
@@ -124,12 +99,12 @@ async def custom_frame_generator():
                         cX = int(M["m10"] / M["m00"])
                         cY = int(M["m01"] / M["m00"])
                         cv2.circle(frame, (cX, cY), 4, utils.id_to_random_color(i), -1)
-                        cv2.putText(frame, "  " + str((tabledistance - depthframe[cY][cX]) / 100), (cX, cY),
+                        cv2.putText(frame, "  " + str((float(tabledistance) - float(depthframe[cY][cX])) / 100), (cX, cY),
                                     cv2.FONT_HERSHEY_SIMPLEX, 0.25, utils.id_to_random_color(i), 1, cv2.LINE_AA)
-                        string = "T " + str(timestamp) + " DH " + str(tabledistance - depthframe[cY][cX])
+                        string = "T " + str(timestamp) + " DH " + str(float(tabledistance) - float(depthframe[cY][cX]))
                         for f in points[i]:
                             cv2.circle(frame, f, 4, utils.id_to_random_color(i), -1)
-                            cv2.putText(frame, "  " + str((tabledistance - depthframe[f[1]][f[0]])/100), f, cv2.FONT_HERSHEY_SIMPLEX, 0.25, utils.id_to_random_color(i),
+                            cv2.putText(frame, "  " + str((float(tabledistance) - float(depthframe[f[1]][f[0]]))/100), f, cv2.FONT_HERSHEY_SIMPLEX, 0.25, utils.id_to_random_color(i),
                                             1, cv2.LINE_AA)
                             #print("color pixel value of ", f, ":", frame[f[1]][f[0]]) # <- TODO: reverse coordinates idk why
                             #print("depth pixel value of ", f, ":", depthframe[f[1]][f[0]])
