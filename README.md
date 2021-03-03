@@ -14,7 +14,6 @@
 This project aims to develop a system for enabling hand gestures in a remote collaboration scenario, with a special focus on architectural design and urban planing. GECCO is a Python port of the [DCOMM system](https://github.com/snavas/DCOMM).
 
 
-
 ## Requirements
 - [pyrealsense2](https://github.com/IntelRealSense/librealsense/tree/master/wrappers/python)
 
@@ -74,13 +73,15 @@ python start.py -s
 ```
 ## Known Issues
 
-## Hardware Description
+## Description
 
-This prototype consists of two twin tabletop systems with a depth camera and a projector attached to them. The system uses the depth camera (Intel RealSense) together with Computer Vision algorithms to recognise and capture hand gestures, transmits those gestures to the other twin system, and then projects those hand gestures on the other end table, augmenting the physical space. However, the scope of the current system is quite limited, as it only detects, logs, transmit and displays a number of hand gestures to the other end, and vice versa.
+This prototype consists of two twin tabletop systems with a depth camera and a projector attached to them. The system uses the depth camera (Intel RealSense) together with Computer Vision algorithms to recognise and capture hand gestures, transmits those gestures to the other twin system, and then projects those hand gestures on the other end table, augmenting the physical space.
 
 <div align="center">
   
   ![Prototype](https://raw.githubusercontent.com/snavas/snavas.github.io/master/img/prototype.png)
+  <br>
+  _GECCO runing on a projector tabletop system. The communication partner's hand gestures are projected over a paper plan_
 
 </div>
 
