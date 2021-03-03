@@ -38,13 +38,6 @@ pip install opencv-contrib-python==4.3.0.36
 ```
 pip install vidgear[asyncio]==0.1.8 
 ```
-Old (deprecated) way:
-```
-git clone https://github.com/abhiTronix/vidgear.git
-cd vidgear
-git checkout testing
-pip install .[asyncio]           # installs all required dependencies including asyncio 
-```
 - [sklearn](https://github.com/scikit-learn/scikit-learn)
 ```
 pip install sklearn
