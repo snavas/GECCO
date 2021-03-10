@@ -27,7 +27,7 @@ def getHand(colorframe, uncaliColorframe, depthframe, uncaliDepthframe, depthsca
         # upper_pink = np.array([170, 0.8 * 255, 0.6 * 255])
         # Todo: New approach, still not working as good as javascript RCARAP, it needs to be refined later
         global lower_pink, upper_pink
-        lower_pink,upper_pink = pink.detectPink(uncaliColorframe, lower_pink, upper_pink)
+        lower_pink,upper_pink = pink.detectPink3D(uncaliColorframe, lower_pink, upper_pink)
         # Threshold the HSV image to get only pink colors
         mask = cv2.inRange(hsv, lower_pink, upper_pink)
         # Bitwise-AND mask and original image
