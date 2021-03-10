@@ -9,8 +9,8 @@ import math
 from sklearn.cluster import DBSCAN
 import libs.utils as utils
 
-lower_pink = np.array([110, 80, 80])
-upper_pink = np.array([170, 255, 255])
+lower_color = np.array([110, 80, 80])
+upper_color = np.array([170, 255, 255])
 
 def angle(vector1, vector2):
     length1 = math.sqrt(vector1[0] * vector1[0] + vector1[1] * vector1[1])
@@ -23,13 +23,13 @@ def getHand(colorframe, uncaliColorframe, depthframe, uncaliDepthframe, depthsca
         hsv = cv2.cvtColor(img, cv2.COLOR_BGR2HSV)
         # define range of blue color in HSV // (145, 100, 20), (155, 255, 255)
         # Todo: From RCARAP (IDK why it works so differently 'bad')
-        # lower_pink = np.array([140, 0.1 * 255, 0.05 * 255])
-        # upper_pink = np.array([170, 0.8 * 255, 0.6 * 255])
+        # lower_color = np.array([140, 0.1 * 255, 0.05 * 255])
+        # upper_color = np.array([170, 0.8 * 255, 0.6 * 255])
         # Todo: New approach, still not working as good as javascript RCARAP, it needs to be refined later
-        global lower_pink, upper_pink
-        lower_pink,upper_pink = color.detectPink3D(uncaliColorframe, lower_pink, upper_pink)
-        # Threshold the HSV image to get only pink colors
-        mask = cv2.inRange(hsv, lower_pink, upper_pink)
+        global lower_color, upper_color
+        lower_color,upper_color = color.detectcolor3D(uncaliColorframe, lower_color, upper_color)
+        # Threshold the HSV image to get only color colors
+        mask = cv2.inRange(hsv, lower_color, upper_color)
         # Bitwise-AND mask and original image
         # res = cv2.bitwise_and(colorframe, colorframe, mask=mask)
         # remove noise

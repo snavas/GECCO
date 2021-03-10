@@ -9,6 +9,43 @@ def calculateCenter(x1,y1,x2,y2):
     center[1] = int((y2 - y1)/2 + y1)
     return center
 
+lower_pink = np.array([110, 80, 80])
+upper_pink = np.array([170, 255, 255])
+
+def getUpperLowerSquare(colorMarkers, colorframe):
+    x1 = int(colorMarkers[0][0][0])
+    y1 = int(colorMarkers[0][0][1])
+    x2 = int(colorMarkers[1][0][0])
+    y2 = int(colorMarkers[1][0][1])
+    center = calculateCenter(x1, y1, x2, y2)
+    cv2.putText(colorframe, "x", (center[0], center[1]), cv2.FONT_HERSHEY_SIMPLEX, 0.25, (0, 0, 255), 1,
+                cv2.LINE_AA)
+
+    innerRectangleXIni = center[0] - 15
+    innerRectangleYIni = center[1] - 15
+    innerRectangleXFin = center[0] + 15
+    innerRectangleYFin = center[1] + 15
+    roi = colorframe[innerRectangleYIni +
+                     1:innerRectangleYFin, innerRectangleXIni +
+                                           1:innerRectangleXFin]
+    hsvRoi = cv2.cvtColor(roi, cv2.COLOR_BGR2HSV)
+
+    lower = np.array(
+        [hsvRoi[:, :, 0].min(), hsvRoi[:, :, 1].min(), hsvRoi[:, :, 2].min()])
+    upper = np.array(
+        [hsvRoi[:, :, 0].max(), hsvRoi[:, :, 1].max(), hsvRoi[:, :, 2].max()])
+    h = hsvRoi[:, :, 0]
+    s = hsvRoi[:, :, 1]
+    v = hsvRoi[:, :, 2]
+
+    average = np.array([np.average(h), np.average(s), np.average(v)])
+    maxSense = np.array([max(abs(lower[0] - average[0]), abs(upper[0] - average[0])),
+                         max(abs(lower[1] - average[1]), abs(upper[1] - average[1])),
+                         max(abs(lower[2] - average[2]), abs(upper[2] - average[2]))])
+    cv2.rectangle(colorframe, (innerRectangleXIni, innerRectangleYIni),
+                  (innerRectangleXFin, innerRectangleYFin), (255, 0, 0), 0)
+    return average, maxSense, colorframe
+
 def main():
     device = RealSense('752112070204')
     file = False
@@ -26,72 +63,77 @@ def main():
             aruco_dict = aruco.Dictionary_get(aruco.DICT_4X4_250)
             parameters = aruco.DetectorParameters_create()
             corners, ids, rejectedImgPoints = aruco.detectMarkers(gray, aruco_dict, parameters=parameters)
-            image = aruco.drawDetectedMarkers(image.copy(), corners, ids)
+            colorframe = aruco.drawDetectedMarkers(image.copy(), corners, ids)
 
-            colorMarkers = []
+            colorMarkersA = []
+            colorMarkersB = []
             if ids is not None:
                 for i in range(len(ids)):
                     if ids[i] == 1:
                         c = corners[i][0]
-                        colorMarkers.append(c)
+                        colorMarkersA.append(c)
+                    if ids[i] == 2:
+                        c = corners[i][0]
+                        colorMarkersB.append(c)
 
-            if len(colorMarkers) == 2:
-                x1 = int(colorMarkers[0][0][0])
-                y1 = int(colorMarkers[0][0][1])
-                x2 = int(colorMarkers[1][0][0])
-                y2 = int(colorMarkers[1][0][1])
-                center = calculateCenter(x1, y1, x2, y2)
+            if len(colorMarkersA) == 2 & len(colorMarkersB) == 2:
+                averageA, maxSenseA, colorframe = getUpperLowerSquare(colorMarkersA, colorframe)
+                lower_pinkA = np.array(
+                    [averageA[0] - maxSenseA[0], averageA[1] - maxSenseA[1], averageA[2] - maxSenseA[2]])
+                upper_pinkA = np.array(
+                    [averageA[0] + maxSenseA[0], averageA[1] + maxSenseA[1], averageA[2] + maxSenseA[2]])
 
-                innerRectangleXIni = center[0] -25
-                innerRectangleYIni = center[1] -25
-                innerRectangleXFin = center[0] +25
-                innerRectangleYFin = center[1] +25
-                roi = image[innerRectangleYIni +
-                            1:innerRectangleYFin, innerRectangleXIni +
-                                                  1:innerRectangleXFin]
-                hsvRoi = cv2.cvtColor(roi, cv2.COLOR_BGR2HSV)
-
-                lower = np.array(
-                    [hsvRoi[:, :, 0].min(), hsvRoi[:, :, 1].min(), hsvRoi[:, :, 2].min()])
-                upper = np.array(
-                    [hsvRoi[:, :, 0].max(), hsvRoi[:, :, 1].max(), hsvRoi[:, :, 2].max()])
-                h = hsvRoi[:, :, 0]
-                s = hsvRoi[:, :, 1]
-                v = hsvRoi[:, :, 2]
-                hAverage = np.average(h)
-                sAverage = np.average(s)
-                vAverage = np.average(v)
-
-                hMaxSensibility = max(abs(lower[0] - hAverage), abs(upper[0] - hAverage))
-                sMaxSensibility = max(abs(lower[1] - sAverage), abs(upper[1] - sAverage))
-                vMaxSensibility = max(abs(lower[2] - vAverage), abs(upper[2] - vAverage))
-
-                print('h max: ', hAverage + hMaxSensibility)
-                print('h min: ', hAverage - hMaxSensibility)
-                print('s max: ', sAverage + sMaxSensibility)
-                print('s min: ', sAverage - sMaxSensibility)
-                print('v max: ', vAverage + vMaxSensibility)
-                print('v min: ', vAverage - vMaxSensibility)
-                cv2.rectangle(image, (innerRectangleXIni, innerRectangleYIni),
-                              (innerRectangleXFin, innerRectangleYFin), (255, 0, 0), 0)
-                colorR = int(image[center[1], center[0]][2])
-                colorG = int(image[center[1], center[0]][1])
-                colorB = int(image[center[1], center[0]][0])
-                print("color:", image[center[1], center[0]])
-                cv2.putText(image, "x", (center[0], center[1]), cv2.FONT_HERSHEY_SIMPLEX, 0.25, (0, 0, 255), 1,
+                averageA, maxSenseB, colorframe = getUpperLowerSquare(colorMarkersB, colorframe)
+                lower_pinkB = np.array(
+                    [averageA[0] - maxSenseB[0], averageA[1] - maxSenseB[1], averageA[2] - maxSenseB[2]])
+                upper_pinkB = np.array(
+                    [averageA[0] + maxSenseB[0], averageA[1] + maxSenseB[1], averageA[2] + maxSenseB[2]])
+                lower_pink = np.array([min(lower_pinkA[0], lower_pinkB[0]),
+                                       min(lower_pinkA[1], lower_pinkB[1]),
+                                       min(lower_pinkA[2], lower_pinkB[2])])
+                upper_pink = np.array([max(upper_pinkA[0], upper_pinkB[0]),
+                                       max(upper_pinkA[1], upper_pinkB[1]),
+                                       max(upper_pinkA[2], upper_pinkB[2])])
+                cv2.putText(colorframe, "color calibration markers detected", (25, 25), cv2.FONT_HERSHEY_SIMPLEX,
+                            0.25,
+                            (255, 0, 0), 1,
                             cv2.LINE_AA)
-                cv2.putText(image, "color calibration markers detected", (25, 25), cv2.FONT_HERSHEY_SIMPLEX, 0.25,
-                            (colorB, colorG, colorR), 1,
+
+            elif len(colorMarkersA) == 2:
+                average, maxSense, colorframe = getUpperLowerSquare(colorMarkersA, colorframe)
+                lower_pink = np.array(
+                    [average[0] - maxSense[0], average[1] - maxSense[1], average[2] - maxSense[2]])
+                upper_pink = np.array(
+                    [average[0] + maxSense[0], average[1] + maxSense[1], average[2] + maxSense[2]])
+                cv2.putText(colorframe, "color calibration markers detected", (25, 25), cv2.FONT_HERSHEY_SIMPLEX,
+                            0.25,
+                            (255, 0, 0), 1,
+                            cv2.LINE_AA)
+            elif len(colorMarkersB) == 2:
+                average, maxSense, colorframe = getUpperLowerSquare(colorMarkersB, colorframe)
+                lower_pink = np.array(
+                    [average[0] - maxSense[0], average[1] - maxSense[1], average[2] - maxSense[2]])
+                upper_pink = np.array(
+                    [average[0] + maxSense[0], average[1] + maxSense[1], average[2] + maxSense[2]])
+                cv2.putText(colorframe, "color calibration markers detected", (25, 25), cv2.FONT_HERSHEY_SIMPLEX,
+                            0.25,
+                            (255, 0, 0), 1,
                             cv2.LINE_AA)
             else:
-                cv2.putText(image, "NO COLOR DETECTION", (25, 25), cv2.FONT_HERSHEY_SIMPLEX, 0.25, (0, 0, 255), 1,
+                cv2.putText(colorframe, "NO COLOR DETECTION", (25, 25), cv2.FONT_HERSHEY_SIMPLEX, 0.25, (0, 0, 255),
+                            1,
                             cv2.LINE_AA)
+            print(lower_pink)
+            print(upper_pink)
+
+
+
 
             #cv2.imshow('Detected Color', image)
             # Show images
             cv2.namedWindow("Output Frame", cv2.WND_PROP_FULLSCREEN)
             cv2.setWindowProperty("Output Frame", cv2.WND_PROP_FULLSCREEN, cv2.WINDOW_NORMAL)
-            cv2.imshow('Output Frame', image)
+            cv2.imshow('Output Frame', colorframe)
             cv2.waitKey(1)
 
     finally:
