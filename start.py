@@ -65,13 +65,13 @@ async def custom_frame_generator():
 
                 M = cv2.getPerspectiveTransform(target_corners,screen_corners)
                 # TODO: derive resolution from width and height of original frame?
-                colorframe = cv2.warpPerspective(colorframe, M, (1280, 720))
-                depthframe = cv2.warpPerspective(depthframe, M, (1280, 720))
+                caliColorframe = cv2.warpPerspective(colorframe, M, (1280, 720))
+                caliDepthframe = cv2.warpPerspective(depthframe, M, (1280, 720))
 
                 ########################
                 # Hand Detection       #
                 ########################
-                result, hands, points = hand.getHand(colorframe, depthframe, device.getdepthscale())
+                result, hands, points = hand.getHand(caliColorframe, colorframe, caliDepthframe, depthframe, device.getdepthscale())
                 #drawings = draw.getDraw(colorframe)
                 #frame = cv2.bitwise_or(result, drawings)
                 frame = result
