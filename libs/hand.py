@@ -1,7 +1,7 @@
 import cv2
 import numpy as np
 import copy
-import libs.detectPink as pink
+import libs.detectColor as color
 
 # Source: https://medium.com/@muehler.v/simple-hand-gesture-recognition-using-opencv-and-javascript-eb3d6ced28a0
 
@@ -27,7 +27,7 @@ def getHand(colorframe, uncaliColorframe, depthframe, uncaliDepthframe, depthsca
         # upper_pink = np.array([170, 0.8 * 255, 0.6 * 255])
         # Todo: New approach, still not working as good as javascript RCARAP, it needs to be refined later
         global lower_pink, upper_pink
-        lower_pink,upper_pink = pink.detectPink3D(uncaliColorframe, lower_pink, upper_pink)
+        lower_pink,upper_pink = color.detectPink3D(uncaliColorframe, lower_pink, upper_pink)
         # Threshold the HSV image to get only pink colors
         mask = cv2.inRange(hsv, lower_pink, upper_pink)
         # Bitwise-AND mask and original image

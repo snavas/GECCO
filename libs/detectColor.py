@@ -50,7 +50,7 @@ def detectPink3D(colorframe, lower_pink, upper_pink):
     colorMarkers = []
     if ids is not None:
         for i in range(len(ids)):
-            if ids[i] == 9:
+            if ids[i] == 1:
                 c = corners[i][0]
                 colorMarkers.append(c)
 
