@@ -4,7 +4,6 @@ from vidgear.gears.helper import reducer
 from classes.realsense import RealSense
 from classes.bcolors import bcolors
 import libs.hand as hand
-import libs.draw as draw
 import libs.calibration as cal
 import libs.utils as utils
 import numpy as np
@@ -58,10 +57,11 @@ async def custom_frame_generator():
             global screen_corners, target_corners
             if continuousCalibration == False and len(target_corners) != 4:
                 frame, screen_corners, target_corners = cal.calibrateViaARUco(colorframe, depthframe, screen_corners, target_corners)
+                if len(target_corners) == 4:
+                    tabledistance = depthframe[int(target_corners[1][1])][int(target_corners[1][0])]
             else:
                 #print(depthframe[int(calibrationMatrix[0][1])][int(calibrationMatrix[0][0])])
                 #print("newtabledistance = ", depthframe[calibrationMatrix[0][1]][calibrationMatrix[0][0]])
-                tabledistance = depthframe[int(target_corners[0][1])][int(target_corners[0][0])]
 
                 M = cv2.getPerspectiveTransform(target_corners,screen_corners)
                 # TODO: derive resolution from width and height of original frame?
@@ -79,18 +79,6 @@ async def custom_frame_generator():
                 # Option 1: Inverting the picture
                 frame = cv2.bitwise_not(frame)
                 frame[np.where((frame == [255, 255, 255]).all(axis=2))] = [0, 0, 0]
-
-                #if (oldCalibration):
-                #    cv2.putText(frame, "CALIBRATED (OLD)", (25, 25), cv2.FONT_HERSHEY_SIMPLEX, 0.25,
-                #                (0, 255, 255), 1, cv2.LINE_AA)
-                #    cv2.putText(frame, "DISTANCE TO TABLE: "+str(tabledistance), (25, 35), cv2.FONT_HERSHEY_SIMPLEX, 0.25,
-                #                (0, 255, 255), 1, cv2.LINE_AA)
-                #else:
-                #    cv2.putText(frame, "CALIBRATED (4)", (25, 25), cv2.FONT_HERSHEY_SIMPLEX, 0.25, (0, 255, 0),
-                #                1, cv2.LINE_AA)
-                #    cv2.putText(frame, "DISTANCE TO TABLE: "+str(tabledistance), (25, 35), cv2.FONT_HERSHEY_SIMPLEX, 0.25, (0, 255, 0),
-                #                1, cv2.LINE_AA)
-
                 if hands:
                 # Print and log the fingertips
                     for i in range(len(hands)):
@@ -117,7 +105,6 @@ async def custom_frame_generator():
                     #cv2.putText(frame, "CALIBRATED (4)", (25, 25), cv2.FONT_HERSHEY_SIMPLEX, 0.25, (0, 0, 255), 1, cv2.LINE_AA)
                     #cv2.putText(frame, "NOT CALIBRATED", (25, 25), cv2.FONT_HERSHEY_SIMPLEX, 0.25, (0, 0, 255), 1, cv2.LINE_AA)
             # frame = reducer(frame, percentage=40)  # reduce frame by 40%
-            # yield frame
             yield frame
             # sleep for sometime
             await asyncio.sleep(0.00001)
