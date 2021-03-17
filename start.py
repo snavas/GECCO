@@ -87,9 +87,26 @@ async def custom_frame_generator():
                         cX = int(M["m10"] / M["m00"])
                         cY = int(M["m01"] / M["m00"])
                         cv2.circle(frame, (cX, cY), 4, utils.id_to_random_color(i), -1)
-                        cv2.putText(frame, "  " + str((float(tabledistance) - float(depthframe[cY][cX])) / 100), (cX, cY),
+                        handToTableDist = (float(tabledistance) - float(depthframe[cY][cX])) / 100
+                        cv2.putText(frame, "  " + str(handToTableDist), (cX, cY),
                                     cv2.FONT_HERSHEY_SIMPLEX, 0.25, utils.id_to_random_color(i), 1, cv2.LINE_AA)
                         string = "T " + str(timestamp) + " DH " + str(float(tabledistance) - float(depthframe[cY][cX]))
+
+                        if handToTableDist > 0 and handToTableDist < 10:
+                            hsv = cv2.cvtColor(frame, cv2.COLOR_BGR2HSV)
+                            h, s, v = cv2.split(hsv)
+                            s[s != 0] -= int(handToTableDist**2)
+                            s[s < 0] = 0
+                            v[v != 0] -= int(handToTableDist * 20)
+
+                            # TODO: figure out how to increase brightness
+                            #temp = v
+                            #v[v != 0] += int(handToTableDist * 20)
+                            #v[v < temp] = 255
+
+                            final_hsv = cv2.merge((h, s, v))
+                            frame = cv2.cvtColor(final_hsv, cv2.COLOR_HSV2BGR)
+
                         for f in points[i]:
                             cv2.circle(frame, f, 4, utils.id_to_random_color(i), -1)
                             cv2.putText(frame, "  " + str((float(tabledistance) - float(depthframe[f[1]][f[0]]))/100), f, cv2.FONT_HERSHEY_SIMPLEX, 0.25, utils.id_to_random_color(i),
