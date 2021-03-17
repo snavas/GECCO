@@ -133,6 +133,7 @@ def getHand(colorframe, uncaliColorframe, depthframe, uncaliDepthframe, depthsca
 
     def getcontourmask(handmask, handcontours):
         mask = np.zeros_like(handmask)  # Create mask where white is what we want, black otherwise
+        # TODO: produce an array of masks (one for each contour)
         cv2.drawContours(mask, handcontours, -1, 255, -1)  # Draw filled contour in mask
         out = np.zeros_like(handmask)  # Extract out the object and place into output image
         out[mask == 255] = handmask[mask == 255]
@@ -159,4 +160,5 @@ def getHand(colorframe, uncaliColorframe, depthframe, uncaliDepthframe, depthsca
         handList = False
         fingerList = False
 
+    # TODO: produce an array of images (one for each mask)
     return cv2.bitwise_and(colorframe, colorframe, mask = handMask), handList, fingerList

@@ -90,6 +90,7 @@ async def custom_frame_generator():
                         handToTableDist = (float(tabledistance) - float(depthframe[cY][cX])) / 100
 
                         if handToTableDist > 0 and handToTableDist < 10:
+                            # TODO: do this for every image
                             hsv = cv2.cvtColor(frame, cv2.COLOR_BGR2HSV)
                             h, s, v = cv2.split(hsv)
                             tempS = np.copy(s)
@@ -130,6 +131,7 @@ async def custom_frame_generator():
                     #frame = colorframe
                     #cv2.putText(frame, "CALIBRATED (4)", (25, 25), cv2.FONT_HERSHEY_SIMPLEX, 0.25, (0, 0, 255), 1, cv2.LINE_AA)
                     #cv2.putText(frame, "NOT CALIBRATED", (25, 25), cv2.FONT_HERSHEY_SIMPLEX, 0.25, (0, 0, 255), 1, cv2.LINE_AA)
+                # TODO: merge images
             # frame = reducer(frame, percentage=40)  # reduce frame by 40%
             yield frame
             # sleep for sometime
