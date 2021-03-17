@@ -38,8 +38,10 @@ class RealSense(Device):
                 config.enable_stream(rs.stream.color, 1280, 720, rs.format.bgr8, 30)
             elif "D435" in str(devices[0]):
                 #print("Resolution: 848x480")
-                config.enable_stream(rs.stream.depth, 848, 480, rs.format.z16, 30)
-                config.enable_stream(rs.stream.color, 848, 480, rs.format.bgr8, 30)
+                #config.enable_stream(rs.stream.depth, 848, 480, rs.format.z16, 30)
+                #config.enable_stream(rs.stream.color, 848, 480, rs.format.bgr8, 30)
+                config.enable_stream(rs.stream.depth, 1280, 720, rs.format.z16, 30)
+                config.enable_stream(rs.stream.color, 1280, 720, rs.format.bgr8, 30)
             else:
                 print("DEVICE NOT COMPATIBLE")
         else:

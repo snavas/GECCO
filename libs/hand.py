@@ -1,6 +1,7 @@
 import cv2
 import numpy as np
 import copy
+import libs.detectColor as color
 
 # Source: https://medium.com/@muehler.v/simple-hand-gesture-recognition-using-opencv-and-javascript-eb3d6ced28a0
 
@@ -8,24 +9,27 @@ import math
 from sklearn.cluster import DBSCAN
 import libs.utils as utils
 
+lower_color = np.array([110, 80, 80])
+upper_color = np.array([170, 255, 255])
+
 def angle(vector1, vector2):
     length1 = math.sqrt(vector1[0] * vector1[0] + vector1[1] * vector1[1])
     length2 = math.sqrt(vector2[0] * vector2[0] + vector2[1] * vector2[1])
     return math.acos((vector1[0] * vector2[0] + vector1[1] * vector2[1])/ (length1 * length2))
 
-def getHand(colorframe, depthframe, depthscale):
+def getHand(colorframe, uncaliColorframe, depthframe, uncaliDepthframe, depthscale):
     def gethandmask(img):
         # Convert BGR to HSV
         hsv = cv2.cvtColor(img, cv2.COLOR_BGR2HSV)
         # define range of blue color in HSV // (145, 100, 20), (155, 255, 255)
         # Todo: From RCARAP (IDK why it works so differently 'bad')
-        # lower_pink = np.array([140, 0.1 * 255, 0.05 * 255])
-        # upper_pink = np.array([170, 0.8 * 255, 0.6 * 255])
+        # lower_color = np.array([140, 0.1 * 255, 0.05 * 255])
+        # upper_color = np.array([170, 0.8 * 255, 0.6 * 255])
         # Todo: New approach, still not working as good as javascript RCARAP, it needs to be refined later
-        lower_pink = np.array([130, 100, 100])
-        upper_pink = np.array([170, 255, 255])
-        # Threshold the HSV image to get only blue colors
-        mask = cv2.inRange(hsv, lower_pink, upper_pink)
+        global lower_color, upper_color
+        lower_color,upper_color = color.detectcolor3D(uncaliColorframe, lower_color, upper_color)
+        # Threshold the HSV image to get only color colors
+        mask = cv2.inRange(hsv, lower_color, upper_color)
         # Bitwise-AND mask and original image
         # res = cv2.bitwise_and(colorframe, colorframe, mask=mask)
         # remove noise
@@ -46,7 +50,7 @@ def getHand(colorframe, depthframe, depthscale):
         # contours = sorted(contours, key=cv2.contourArea)  # TODO: is this really necessary?
         for c in contours:
             # If contours are bigger than a certain area we push them to the array
-            if cv2.contourArea(c) > 3000:
+            if cv2.contourArea(c) > 2500:
                 hand_contours.append(c)
         return hand_contours
 
@@ -127,12 +131,20 @@ def getHand(colorframe, depthframe, depthscale):
         return center.transpose()
         #return contour_points
 
+    def getcontourmask(handmask, handcontours):
+        mask = np.zeros_like(handmask)  # Create mask where white is what we want, black otherwise
+        cv2.drawContours(mask, handcontours, -1, 255, -1)  # Draw filled contour in mask
+        out = np.zeros_like(handmask)  # Extract out the object and place into output image
+        out[mask == 255] = handmask[mask == 255]
+        return out
+
     ###################################################
     # Function body
     ###################################################
 
     handMask = gethandmask(colorframe)  # hand mask
     handContours = getcontours(handMask)       # hand contours
+    handMask = getcontourmask(handMask, handContours)
     handList = []
     fingerList = []
     if handContours:

@@ -54,9 +54,9 @@ def calibrateViaRedSquares(originalframe, segmentedframe, matrix):
 
 
 
-def calibrateViaARUco(originalframe, segmentedframe, matrix):
+def calibrateViaARUco(originalframe, segmentedframe, screen_corners, target_corners):
     gray = cv2.cvtColor(originalframe, cv2.COLOR_BGR2GRAY)
-    aruco_dict = aruco.Dictionary_get(aruco.DICT_6X6_250)
+    aruco_dict = aruco.Dictionary_get(aruco.DICT_4X4_250)
     parameters = aruco.DetectorParameters_create()
     corners, ids, rejectedImgPoints = aruco.detectMarkers(gray, aruco_dict, parameters=parameters)
     frame_markers = aruco.drawDetectedMarkers(originalframe.copy(), corners, ids)
@@ -69,18 +69,16 @@ def calibrateViaARUco(originalframe, segmentedframe, matrix):
                 calibrationMatrix.append([c[0, 0], c[0, 1]])
 
     if len(calibrationMatrix) == 4:
-        matrix = calibrationMatrix
-    return frame_markers, matrix
+        num_rows, num_cols, _ = originalframe.shape
+        screen_corners = np.array([
+            [num_cols, num_rows],
+            [num_cols, 0],
+            [0, num_rows],
+            [0, 0]
+        ], np.float32)
 
-    # OLD CODE, IT DOESNT NOT MAKE SENSE ANYMORE
-    if len(calibrationMatrix) == 4:
-        cv2.putText(segmentedframe, "CALIBRATED (4)", (25, 25), cv2.FONT_HERSHEY_SIMPLEX, 0.25, (0, 255, 0), 1,
-                    cv2.LINE_AA)
-        matrix = calibrationMatrix
-    elif len(matrix) == 4:
-        cv2.putText(segmentedframe, "CALIBRATED (OLD)", (25, 25), cv2.FONT_HERSHEY_SIMPLEX, 0.25, (0, 255, 255), 1, cv2.LINE_AA)
-    else:
-        cv2.putText(segmentedframe, "NOT CALIBRATED", (25, 25), cv2.FONT_HERSHEY_SIMPLEX, 0.25, (0, 0, 255), 1, cv2.LINE_AA)
-    return segmentedframe, matrix
-
-
+        # TODO: choose different aruco codes for every corner instead of ordering like this
+        b = np.sum(calibrationMatrix, axis=1)
+        idx = (-b).argsort()
+        target_corners = np.array(np.take(calibrationMatrix, idx, axis=0), np.float32)
+    return frame_markers, screen_corners, target_corners
