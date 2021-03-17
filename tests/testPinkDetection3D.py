@@ -123,8 +123,6 @@ def main():
                 cv2.putText(colorframe, "NO COLOR DETECTION", (25, 25), cv2.FONT_HERSHEY_SIMPLEX, 0.25, (0, 0, 255),
                             1,
                             cv2.LINE_AA)
-            print(lower_pink)
-            print(upper_pink)
 
 
 
