@@ -87,12 +87,12 @@ async def custom_frame_generator():
                         cX = int(M["m10"] / M["m00"])
                         cY = int(M["m01"] / M["m00"])
                         cv2.circle(frame, (cX, cY), 4, utils.id_to_random_color(i), -1)
-                        cv2.putText(frame, "  " + str((float(tabledistance) - float(depthframe[cY][cX])) / 100), (cX, cY),
+                        cv2.putText(frame, "  " + str((float(tabledistance) - float(caliDepthframe[cY][cX])) / 100), (cX, cY),
                                     cv2.FONT_HERSHEY_SIMPLEX, 0.25, utils.id_to_random_color(i), 1, cv2.LINE_AA)
                         string = "T " + str(timestamp) + " DH " + str(float(tabledistance) - float(depthframe[cY][cX]))
                         for f in points[i]:
                             cv2.circle(frame, f, 4, utils.id_to_random_color(i), -1)
-                            cv2.putText(frame, "  " + str((float(tabledistance) - float(depthframe[f[1]][f[0]]))/100), f, cv2.FONT_HERSHEY_SIMPLEX, 0.25, utils.id_to_random_color(i),
+                            cv2.putText(frame, "  " + str((float(tabledistance) - float(caliDepthframe[f[1]][f[0]]))/100), f, cv2.FONT_HERSHEY_SIMPLEX, 0.25, utils.id_to_random_color(i),
                                             1, cv2.LINE_AA)
                             #print("color pixel value of ", f, ":", frame[f[1]][f[0]]) # <- TODO: reverse coordinates idk why
                             #print("depth pixel value of ", f, ":", depthframe[f[1]][f[0]])
