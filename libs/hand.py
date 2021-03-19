@@ -132,12 +132,14 @@ def getHand(colorframe, uncaliColorframe, depthframe, uncaliDepthframe, depthsca
         #return contour_points
 
     def getcontourmask(handmask, handcontours):
-        mask = np.zeros_like(handmask)  # Create mask where white is what we want, black otherwise
-        # TODO: produce an array of masks (one for each contour)
-        cv2.drawContours(mask, handcontours, -1, 255, -1)  # Draw filled contour in mask
-        out = np.zeros_like(handmask)  # Extract out the object and place into output image
-        out[mask == 255] = handmask[mask == 255]
-        return out
+        arrayOut = []
+        for contour in handcontours:
+            mask = np.zeros_like(handmask)  # Create mask where white is what we want, black otherwise
+            cv2.drawContours(mask, [contour], -1, 255, -1)  # Draw filled contour in mask
+            tempOut = np.zeros_like(handmask)  # Extract out the object and place into output image
+            tempOut[mask == 255] = handmask[mask == 255]
+            arrayOut.append(tempOut)
+        return arrayOut
 
     ###################################################
     # Function body
@@ -145,7 +147,7 @@ def getHand(colorframe, uncaliColorframe, depthframe, uncaliDepthframe, depthsca
 
     handMask = gethandmask(colorframe)  # hand mask
     handContours = getcontours(handMask)       # hand contours
-    handMask = getcontourmask(handMask, handContours)
+    handMasks = getcontourmask(handMask, handContours)
     handList = []
     fingerList = []
     if handContours:
@@ -160,5 +162,9 @@ def getHand(colorframe, uncaliColorframe, depthframe, uncaliDepthframe, depthsca
         handList = False
         fingerList = False
 
-    # TODO: produce an array of images (one for each mask)
-    return cv2.bitwise_and(colorframe, colorframe, mask = handMask), handList, fingerList
+    colorframes = []
+    for curMask in handMasks:
+        temp = colorframe.copy()
+        temp = cv2.bitwise_and(temp, temp, mask=curMask)
+        colorframes.append(temp)
+    return colorframes, handList, fingerList
