@@ -114,7 +114,7 @@ async def custom_frame_generator():
                         cv2.circle(results[i], (cX, cY), 4, utils.id_to_random_color(i), -1)
                         cv2.putText(results[i], "  " + str(handToTableDist), (cX, cY),
                                     cv2.FONT_HERSHEY_SIMPLEX, 0.25, utils.id_to_random_color(i), 1, cv2.LINE_AA)
-                        string = "T " + str(timestamp) + " DH " + str(float(tabledistance) - float(caliDepthframe[cY][cX]))
+                        log.write(str(timestamp) + " " + str(float(tabledistance) - float(depthframe[cY][cX])) + " H " + str(cX) + " " + str(cY) + "\n")
 
                         for f in points[i]:
                             cv2.circle(results[i], f, 4, utils.id_to_random_color(i), -1)
@@ -122,8 +122,7 @@ async def custom_frame_generator():
                                             1, cv2.LINE_AA)
                             #print("color pixel value of ", f, ":", frame[f[1]][f[0]]) # <- TODO: reverse coordinates idk why
                             #print("depth pixel value of ", f, ":", depthframe[f[1]][f[0]])
-                            string += " P " + str(f)
-                        log.write(string+"\n")
+                            log.write(str(timestamp) + " " + str(float(tabledistance) - float(depthframe[cY][cX])) + " P " +  str(f[0]) + " " + str(f[1]) + "\n")
                         frame = cv2.bitwise_or(frame, results[i])
                 else:
                     pass
@@ -222,4 +221,5 @@ if __name__ == '__main__':
         DeviceSrc = options.file
 
     log = open("logs/log_"+str(int(time.time()))+".log", "x")
+    log.write("timestamp height class x y" + "\n")
     asyncio.run(netgear_async_playback(options))

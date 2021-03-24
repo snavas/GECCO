@@ -90,10 +90,9 @@ def detectcolor3D(colorframe, lower_color, upper_color):
         upper_color = np.array([max(upper_colorA[0], upper_colorB[0]),
                                max(upper_colorA[1], upper_colorB[1]),
                                max(upper_colorA[2], upper_colorB[2])])
-    # TODO: Is this practical or not?
-    # elif len(colorMarkersA) == 2:
-    #     lower_color, upper_color = getUpperLowerSquare(colorMarkersA, colorframe)
-    # elif len(colorMarkersB) == 2:
-    #     lower_color, upper_color = getUpperLowerSquare(colorMarkersB, colorframe)
+    elif len(colorMarkersA) == 2:
+        lower_color, upper_color = getUpperLowerSquare(colorMarkersA, colorframe)
+    elif len(colorMarkersB) == 2:
+        lower_color, upper_color = getUpperLowerSquare(colorMarkersB, colorframe)
 
     return lower_color, upper_color
