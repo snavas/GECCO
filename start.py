@@ -6,6 +6,7 @@ from classes.bcolors import bcolors
 import libs.hand as hand
 import libs.calibration as cal
 import libs.utils as utils
+import libs.visHeight as height
 import numpy as np
 import cv2, asyncio
 import argparse
@@ -28,7 +29,7 @@ DeviceSrc = "752112070204"
 #fileFlag = True
 
 # Create a async frame generator as custom source
-async def custom_frame_generator():
+async def custom_frame_generator(useDepth):
     try:
         # Get global log variable
         global log
@@ -40,13 +41,14 @@ async def custom_frame_generator():
             ########################
             # Startup              #
             ########################
-            # read frames
-            colorframe = device.getcolorstream()
-            #if fileFlag:
-            #    colorframe = cv2.cvtColor(colorframe, cv2.COLOR_RGB2BGR) #Reading from BAG alters the color space and needs to be fixed
-            depthframe = device.getdepthstream()
             # store time in seconds since the epoch (UTC)
             timestamp = time.time()
+            # read frames
+            colorframe = device.getcolorstream()
+            print(time.now() - timestamp)
+            #if fileFlag:
+            #    colorframe = cv2.cvtColor(colorframe, cv2.COLOR_RGB2BGR) #Reading from BAG alters the color space and needs to be fixed
+
             # check if frame empty
             if colorframe is None:
                 break
@@ -56,8 +58,9 @@ async def custom_frame_generator():
             ########################
             global screen_corners, target_corners
             if continuousCalibration == False and len(target_corners) != 4:
-                frame, screen_corners, target_corners = cal.calibrateViaARUco(colorframe, depthframe, screen_corners, target_corners)
-                if len(target_corners) == 4:
+                frame, screen_corners, target_corners = cal.calibrateViaARUco(colorframe, screen_corners, target_corners)
+                if len(target_corners) == 4 and useDepth:
+                    depthframe = device.getdepthstream()
                     tabledistance = depthframe[int(target_corners[1][1])][int(target_corners[1][0])]
                     if tabledistance == 0:
                         tabledistance = 1200
@@ -68,70 +71,69 @@ async def custom_frame_generator():
                 M = cv2.getPerspectiveTransform(target_corners,screen_corners)
                 # TODO: derive resolution from width and height of original frame?
                 caliColorframe = cv2.warpPerspective(colorframe, M, (1280, 720))
-                caliDepthframe = cv2.warpPerspective(depthframe, M, (1280, 720))
 
                 ########################
                 # Hand Detection       #
                 ########################
                 frame = np.zeros(colorframe.shape, dtype='uint8')
-                results, hands, points = hand.getHand(caliColorframe, colorframe, caliDepthframe, depthframe, device.getdepthscale())
+                results, hands, points = hand.getHand(caliColorframe, colorframe)
                 #drawings = draw.getDraw(colorframe)
                 #frame = cv2.bitwise_or(result, drawings)
+
                 if hands:
-                # Print and log the fingertips
-                    for i in range(len(hands)):
-                        # Altering hand colors (to avoid feedback loop
-                        # Option 1: Inverting the picture
-                        results[i] = cv2.bitwise_not(results[i])
-                        results[i][np.where((results[i] == [255, 255, 255]).all(axis=2))] = [0, 0, 0]
-                        # Calculate hand centre
-                        M = cv2.moments(hands[i])
-                        cX = int(M["m10"] / M["m00"])
-                        cY = int(M["m01"] / M["m00"])
+                    if useDepth:
+                        depthframe = device.getdepthstream()
+                        caliDepthframe = cv2.warpPerspective(depthframe, M, (1280, 720))
+                        # Print and log the fingertips
+                        for i in range(len(hands)):
+                            # Altering hand colors (to avoid feedback loop
+                            # Option 1: Inverting the picture
+                            results[i] = cv2.bitwise_not(results[i])
+                            results[i][np.where((results[i] == [255, 255, 255]).all(axis=2))] = [0, 0, 0]
+                            # Calculate hand centre
+                            M = cv2.moments(hands[i])
+                            cX = int(M["m10"] / M["m00"])
+                            cY = int(M["m01"] / M["m00"])
 
-                        handToTableDist = (float(tabledistance) - float(caliDepthframe[cY][cX])) / 100
+                            handToTableDist = (float(tabledistance) - float(caliDepthframe[cY][cX])) / 100
 
-                        if handToTableDist > 0 and handToTableDist < 10:
-                            hsv = cv2.cvtColor(results[i], cv2.COLOR_BGR2HSV)
-                            h, s, v = cv2.split(hsv)
-                            tempS = np.copy(s)
-                            tempS = tempS.astype('int16')
-                            tempS[tempS != 0] -= int(((handToTableDist)**1.3) * 20)
-                            tempS[tempS < 1] = 1
-                            tempS = tempS.astype('uint8')
-                            s[s != 0] = tempS[s != 0]
+                            if handToTableDist > 0 and handToTableDist < 10:
+                                results[i] = height.visHeight(results[i], handToTableDist)
 
-                            tempV = np.copy(v)
-                            tempV = tempV.astype('int16')
-                            tempV[tempV != 0] -= int(((handToTableDist)**1.6) * 20)
-                            tempV[tempV < 1] = 1
-                            tempV = tempV.astype('uint8')
-                            v[v!=0] = tempV[v!=0]
+                            cv2.circle(results[i], (cX, cY), 4, utils.id_to_random_color(i), -1)
+                            cv2.putText(results[i], "  " + str(handToTableDist), (cX, cY),
+                                        cv2.FONT_HERSHEY_SIMPLEX, 0.25, utils.id_to_random_color(i), 1, cv2.LINE_AA)
+                            log.write(str(timestamp) + " " + str(float(tabledistance) - float(depthframe[cY][cX])) + " H " + str(cX) + " " + str(cY) + "\n")
 
-                            final_hsv = cv2.merge((h, s, v))
-                            results[i] = cv2.cvtColor(final_hsv, cv2.COLOR_HSV2BGR)
+                            for f in points[i]:
+                                cv2.circle(results[i], f, 4, utils.id_to_random_color(i), -1)
+                                cv2.putText(results[i], "  " + str((float(tabledistance) - float(caliDepthframe[f[1]][f[0]]))/100), f, cv2.FONT_HERSHEY_SIMPLEX, 0.25, utils.id_to_random_color(i),
+                                                1, cv2.LINE_AA)
+                                #print("color pixel value of ", f, ":", frame[f[1]][f[0]]) # <- TODO: reverse coordinates idk why
+                                #print("depth pixel value of ", f, ":", depthframe[f[1]][f[0]])
+                                log.write(str(timestamp) + " " + str(float(tabledistance) - float(depthframe[cY][cX])) + " P " +  str(f[0]) + " " + str(f[1]) + "\n")
+                            frame = cv2.bitwise_or(frame, results[i])
+                    else:
+                        for i in range(len(hands)):
+                            # Altering hand colors (to avoid feedback loop
+                            # Option 1: Inverting the picture
+                            results[i] = cv2.bitwise_not(results[i])
+                            results[i][np.where((results[i] == [255, 255, 255]).all(axis=2))] = [0, 0, 0]
+                            frame = cv2.bitwise_or(frame, results[i])
 
-                        cv2.circle(results[i], (cX, cY), 4, utils.id_to_random_color(i), -1)
-                        cv2.putText(results[i], "  " + str(handToTableDist), (cX, cY),
-                                    cv2.FONT_HERSHEY_SIMPLEX, 0.25, utils.id_to_random_color(i), 1, cv2.LINE_AA)
-                        log.write(str(timestamp) + " " + str(float(tabledistance) - float(depthframe[cY][cX])) + " H " + str(cX) + " " + str(cY) + "\n")
-
-                        for f in points[i]:
-                            cv2.circle(results[i], f, 4, utils.id_to_random_color(i), -1)
-                            cv2.putText(results[i], "  " + str((float(tabledistance) - float(caliDepthframe[f[1]][f[0]]))/100), f, cv2.FONT_HERSHEY_SIMPLEX, 0.25, utils.id_to_random_color(i),
-                                            1, cv2.LINE_AA)
-                            #print("color pixel value of ", f, ":", frame[f[1]][f[0]]) # <- TODO: reverse coordinates idk why
-                            #print("depth pixel value of ", f, ":", depthframe[f[1]][f[0]])
-                            log.write(str(timestamp) + " " + str(float(tabledistance) - float(depthframe[cY][cX])) + " P " +  str(f[0]) + " " + str(f[1]) + "\n")
-                        frame = cv2.bitwise_or(frame, results[i])
-                else:
-                    pass
-                    #print("Unable to calibrate")
-                    #frame = colorframe
-                    #cv2.putText(frame, "CALIBRATED (4)", (25, 25), cv2.FONT_HERSHEY_SIMPLEX, 0.25, (0, 0, 255), 1, cv2.LINE_AA)
-                    #cv2.putText(frame, "NOT CALIBRATED", (25, 25), cv2.FONT_HERSHEY_SIMPLEX, 0.25, (0, 0, 255), 1, cv2.LINE_AA)
+                            # Calculate hand centre
+                            M = cv2.moments(hands[i])
+                            cX = int(M["m10"] / M["m00"])
+                            cY = int(M["m01"] / M["m00"])
+                            log.write(str(timestamp) + " Null H " + str(cX) + " " + str(
+                                cY) + "\n")
+                            for f in points[i]:
+                                log.write(str(timestamp) + " Null P " + str(f[0]) + " " + str(
+                                    f[1]) + "\n")
 
             # frame = reducer(frame, percentage=40)  # reduce frame by 40%
+            # to measure time to completion
+            # print(time.now() - timestamp)
             yield frame
             # sleep for sometime
             await asyncio.sleep(0.00001)
@@ -178,7 +180,7 @@ async def netgear_async_playback(pattern):
         server = NetGear_Async(
             address = PeerAddress, port = PeerPort, pattern=1, **options
         )
-        server.config["generator"] = custom_frame_generator()
+        server.config["generator"] = custom_frame_generator(pattern.depth)
         server.launch()
         # gather and run tasks
         input_coroutines = [server.task, client_iterator(client)]
@@ -197,6 +199,7 @@ def getOptions(args=sys.argv[1:]):
     parser.add_argument("-a", "--address", help="Peer IP address")
     parser.add_argument("-p", "--port", type=int, help="Peer port number")
     parser.add_argument("-f", "--file", help="Simulate camera sensor from .bag file")
+    parser.add_argument("-d", "--depth", help="dont use depth camera (faster)", action='store_false')
     #parser.add_argument("-v", "--verbose",dest='verbose',action='store_true', help="Verbose mode.")
     options = parser.parse_args(args)
     return options

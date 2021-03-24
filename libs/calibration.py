@@ -54,7 +54,7 @@ def calibrateViaRedSquares(originalframe, segmentedframe, matrix):
 
 
 
-def calibrateViaARUco(originalframe, segmentedframe, screen_corners, target_corners):
+def calibrateViaARUco(originalframe, screen_corners, target_corners):
     gray = cv2.cvtColor(originalframe, cv2.COLOR_BGR2GRAY)
     aruco_dict = aruco.Dictionary_get(aruco.DICT_4X4_250)
     parameters = aruco.DetectorParameters_create()
