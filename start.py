@@ -45,7 +45,6 @@ async def custom_frame_generator(useDepth):
             timestamp = time.time()
             # read frames
             colorframe = device.getcolorstream()
-            print(time.now() - timestamp)
             #if fileFlag:
             #    colorframe = cv2.cvtColor(colorframe, cv2.COLOR_RGB2BGR) #Reading from BAG alters the color space and needs to be fixed
 
@@ -125,15 +124,17 @@ async def custom_frame_generator(useDepth):
                             M = cv2.moments(hands[i])
                             cX = int(M["m10"] / M["m00"])
                             cY = int(M["m01"] / M["m00"])
+                            # record depth as "Null"
                             log.write(str(timestamp) + " Null H " + str(cX) + " " + str(
                                 cY) + "\n")
                             for f in points[i]:
+                                # record depth as "Null"
                                 log.write(str(timestamp) + " Null P " + str(f[0]) + " " + str(
                                     f[1]) + "\n")
 
             # frame = reducer(frame, percentage=40)  # reduce frame by 40%
             # to measure time to completion
-            # print(time.now() - timestamp)
+            # print(time.time() - timestamp)
             yield frame
             # sleep for sometime
             await asyncio.sleep(0.00001)
