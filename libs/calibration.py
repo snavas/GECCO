@@ -59,7 +59,7 @@ def calibrateViaARUco(originalframe, segmentedframe, screen_corners, target_corn
     aruco_dict = aruco.Dictionary_get(aruco.DICT_4X4_250)
     parameters = aruco.DetectorParameters_create()
     corners, ids, rejectedImgPoints = aruco.detectMarkers(gray, aruco_dict, parameters=parameters)
-    frame_markers = aruco.drawDetectedMarkers(originalframe.copy(), corners, ids)
+    frame_markers = aruco.drawDetectedMarkers(np.zeros(originalframe.shape), corners, ids)
 
     calibrationMatrix = []
     if ids is not None:

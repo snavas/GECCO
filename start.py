@@ -59,6 +59,8 @@ async def custom_frame_generator():
                 frame, screen_corners, target_corners = cal.calibrateViaARUco(colorframe, depthframe, screen_corners, target_corners)
                 if len(target_corners) == 4:
                     tabledistance = depthframe[int(target_corners[1][1])][int(target_corners[1][0])]
+                    if tabledistance == 0:
+                        tabledistance = 1200
             else:
                 #print(depthframe[int(calibrationMatrix[0][1])][int(calibrationMatrix[0][0])])
                 #print("newtabledistance = ", depthframe[calibrationMatrix[0][1]][calibrationMatrix[0][0]])
@@ -71,39 +73,65 @@ async def custom_frame_generator():
                 ########################
                 # Hand Detection       #
                 ########################
-                result, hands, points = hand.getHand(caliColorframe, colorframe, caliDepthframe, depthframe, device.getdepthscale())
+                frame = np.zeros(colorframe.shape, dtype='uint8')
+                results, hands, points = hand.getHand(caliColorframe, colorframe, caliDepthframe, depthframe, device.getdepthscale())
                 #drawings = draw.getDraw(colorframe)
                 #frame = cv2.bitwise_or(result, drawings)
-                frame = result
-                # Altering hand colors (to avoid feedback loop
-                # Option 1: Inverting the picture
-                frame = cv2.bitwise_not(frame)
-                frame[np.where((frame == [255, 255, 255]).all(axis=2))] = [0, 0, 0]
                 if hands:
                 # Print and log the fingertips
                     for i in range(len(hands)):
+                        # Altering hand colors (to avoid feedback loop
+                        # Option 1: Inverting the picture
+                        results[i] = cv2.bitwise_not(results[i])
+                        results[i][np.where((results[i] == [255, 255, 255]).all(axis=2))] = [0, 0, 0]
                         # Calculate hand centre
                         M = cv2.moments(hands[i])
                         cX = int(M["m10"] / M["m00"])
                         cY = int(M["m01"] / M["m00"])
-                        cv2.circle(frame, (cX, cY), 4, utils.id_to_random_color(i), -1)
-                        cv2.putText(frame, "  " + str((float(tabledistance) - float(caliDepthframe[cY][cX])) / 100), (cX, cY),
+
+                        handToTableDist = (float(tabledistance) - float(caliDepthframe[cY][cX])) / 100
+
+                        if handToTableDist > 0 and handToTableDist < 10:
+                            hsv = cv2.cvtColor(results[i], cv2.COLOR_BGR2HSV)
+                            h, s, v = cv2.split(hsv)
+                            tempS = np.copy(s)
+                            tempS = tempS.astype('int16')
+                            tempS[tempS != 0] -= int(((handToTableDist)**1.3) * 20)
+                            tempS[tempS < 1] = 1
+                            tempS = tempS.astype('uint8')
+                            s[s != 0] = tempS[s != 0]
+
+                            tempV = np.copy(v)
+                            tempV = tempV.astype('int16')
+                            tempV[tempV != 0] -= int(((handToTableDist)**1.6) * 20)
+                            tempV[tempV < 1] = 1
+                            tempV = tempV.astype('uint8')
+                            v[v!=0] = tempV[v!=0]
+
+                            final_hsv = cv2.merge((h, s, v))
+                            results[i] = cv2.cvtColor(final_hsv, cv2.COLOR_HSV2BGR)
+
+                        cv2.circle(results[i], (cX, cY), 4, utils.id_to_random_color(i), -1)
+                        cv2.putText(results[i], "  " + str(handToTableDist), (cX, cY),
                                     cv2.FONT_HERSHEY_SIMPLEX, 0.25, utils.id_to_random_color(i), 1, cv2.LINE_AA)
-                        string = "T " + str(timestamp) + " DH " + str(float(tabledistance) - float(depthframe[cY][cX]))
+                        string = "T " + str(timestamp) + " DH " + str(float(tabledistance) - float(caliDepthframe[cY][cX]))
+
                         for f in points[i]:
-                            cv2.circle(frame, f, 4, utils.id_to_random_color(i), -1)
-                            cv2.putText(frame, "  " + str((float(tabledistance) - float(caliDepthframe[f[1]][f[0]]))/100), f, cv2.FONT_HERSHEY_SIMPLEX, 0.25, utils.id_to_random_color(i),
+                            cv2.circle(results[i], f, 4, utils.id_to_random_color(i), -1)
+                            cv2.putText(results[i], "  " + str((float(tabledistance) - float(caliDepthframe[f[1]][f[0]]))/100), f, cv2.FONT_HERSHEY_SIMPLEX, 0.25, utils.id_to_random_color(i),
                                             1, cv2.LINE_AA)
                             #print("color pixel value of ", f, ":", frame[f[1]][f[0]]) # <- TODO: reverse coordinates idk why
                             #print("depth pixel value of ", f, ":", depthframe[f[1]][f[0]])
                             string += " P " + str(f)
                         log.write(string+"\n")
+                        frame = cv2.bitwise_or(frame, results[i])
                 else:
                     pass
                     #print("Unable to calibrate")
                     #frame = colorframe
                     #cv2.putText(frame, "CALIBRATED (4)", (25, 25), cv2.FONT_HERSHEY_SIMPLEX, 0.25, (0, 0, 255), 1, cv2.LINE_AA)
                     #cv2.putText(frame, "NOT CALIBRATED", (25, 25), cv2.FONT_HERSHEY_SIMPLEX, 0.25, (0, 0, 255), 1, cv2.LINE_AA)
+
             # frame = reducer(frame, percentage=40)  # reduce frame by 40%
             yield frame
             # sleep for sometime
