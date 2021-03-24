@@ -114,7 +114,7 @@ async def custom_frame_generator():
                         cv2.circle(results[i], (cX, cY), 4, utils.id_to_random_color(i), -1)
                         cv2.putText(results[i], "  " + str(handToTableDist), (cX, cY),
                                     cv2.FONT_HERSHEY_SIMPLEX, 0.25, utils.id_to_random_color(i), 1, cv2.LINE_AA)
-                        string = "T " + str(timestamp) + " DH " + str(float(tabledistance) - float(depthframe[cY][cX]))
+                        string = "T " + str(timestamp) + " DH " + str(float(tabledistance) - float(caliDepthframe[cY][cX]))
 
                         for f in points[i]:
                             cv2.circle(results[i], f, 4, utils.id_to_random_color(i), -1)
