@@ -18,7 +18,7 @@ class RealSense(Device):
         ctx = rs.context()
         devices = ctx.query_devices()
         print("<*> Connected devices: ")
-        print(*devices, sep="\n")
+        #print(*devices, sep="\n")
 
         # TODO: Posible improvement to better query devices:
         #>> > d = ctx.load_device("C:\\Users\\local_admin\\Documents\\20180212_000327.bag")

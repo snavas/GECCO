@@ -24,61 +24,14 @@ import torch.nn as nn
 from PIL import Image
 import numpy as np
 
-deeplab = models.segmentation.fcn_resnet50(pretrained=0,
-                                                 progress=1,
-                                                 num_classes=2)
-class HandSegModel(nn.Module):
-    def __init__(self):
-        super(HandSegModel,self).__init__()
-        self.dl = deeplab
+import json
+import os
+import glob
+from models.fcn import fcn_32_mobilenet
 
-    def forward(self, x):
-        y = self.dl(x)['out']
-        return y
+checkpoints_path="D:/paula/Documents/NotFun/Studium/Master_Geoinformatics/GECCO/GECCO/checkpoints\\fcn_32_mobilenet_1"
 
-#can pass np array or path to image file
-def SegmentHands(pathtest):
-
-    if isinstance(pathtest, np.ndarray):
-        img = Image.fromarray(pathtest)
-    else :
-        img = Image.open(pathtest)
-
-    preprocess = transforms.Compose([transforms.ToTensor(),
-                                     transforms.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225])])
-    Xtest = preprocess(img)
-
-    checkpoint = torch.load('checkpoints/checkpointhandseg3.pt')
-    model = HandSegModel()
-    model.load_state_dict(checkpoint['state_dict'])
-    with torch.no_grad():
-        model.eval()
-        if torch.cuda.is_available():
-            dev = "cuda:0"
-        else:
-            dev = "cpu"
-        device = torch.device(dev)
-        model.to(device)
-        Xtest = Xtest.to(device).float()
-        ytest = model(Xtest.unsqueeze(0).float())
-        ypos = ytest[0, 1, :, :].clone().detach().cpu().numpy()
-        yneg = ytest[0, 0, :, :].clone().detach().cpu().numpy()
-        ytest = ypos >= yneg
-
-    mask = ytest.astype('float32')
-    kernel = cv2.getStructuringElement(cv2.MORPH_ELLIPSE,(5,5))
-    mask = cv2.dilate(mask,kernel,iterations = 2)
-    mask = cv2.morphologyEx(mask, cv2.MORPH_CLOSE, kernel)
-    mask = cv2.morphologyEx(mask, cv2.MORPH_OPEN, kernel)
-    return mask
 #################################################################################
-def getcoloredMask(image, mask):
-    color_mask = np.zeros_like(image)
-    color_mask[:, :, 1] += mask.astype('uint8') * 250
-    masked = cv2.addWeighted(image, 1.0, color_mask, 1.0, 0.0)
-    return masked
-
-
 HostPort = 5555
 PeerAddress = "localhost"
 PeerPort = 5555
@@ -89,6 +42,63 @@ overlay = True
 DeviceSrc = "752112070204"
 #fileFlag = True
 
+def find_latest_checkpoint(fail_safe=True):
+
+    # This is legacy code, there should always be a "checkpoint" file in your directory
+
+    def get_epoch_number_from_path(path):
+        return path.replace(checkpoints_path, "").strip(".")
+
+    # Get all matching files
+    all_checkpoint_files = glob.glob(checkpoints_path + "*.*")
+    all_checkpoint_files = [ff.replace(".index", "") for ff in
+                            all_checkpoint_files]  # to make it work for newer versions of keras
+    # Filter out entries where the epoc_number part is pure number
+    all_checkpoint_files = list(filter(lambda f: get_epoch_number_from_path(f)
+                                       .isdigit(), all_checkpoint_files))
+    if not len(all_checkpoint_files):
+        # The glob list is empty, don't have a checkpoints_path
+        if not fail_safe:
+            raise ValueError("Checkpoint path {0} invalid"
+                             .format(checkpoints_path))
+        else:
+            return None
+
+    # Find the checkpoint file with the maximum epoch
+    latest_epoch_checkpoint = max(all_checkpoint_files,
+                                  key=lambda f:
+                                  int(get_epoch_number_from_path(f)))
+
+    return latest_epoch_checkpoint
+
+def getModel():
+    #from models.all_models import model_from_name
+    assert (os.path.isfile(checkpoints_path + "_config.json")
+            ), "Checkpoint not found."
+    model_config = json.loads(
+        open(checkpoints_path + "_config.json", "r").read())
+    latest_weights = find_latest_checkpoint()
+    assert (latest_weights is not None), "Checkpoint not found."
+    model = fcn_32_mobilenet(
+        model_config['n_classes'], input_height=model_config['input_height'],
+        input_width=model_config['input_width'])
+    print("loaded weights ", latest_weights)
+    status = model.load_weights(latest_weights)
+
+    if status is not None:
+        status.expect_partial()
+
+    return model
+
+def getcoloredMask(image, mask):
+    original_h = image.shape[0]
+    original_w = image.shape[1]
+    mask = cv2.resize(mask, (original_w, original_h), interpolation=cv2.INTER_NEAREST)
+    color_mask = np.zeros_like(image)
+    color_mask[:, :, 1] += mask.astype('uint8') * 100
+    masked = cv2.addWeighted(image, 1.0, color_mask, 1.0, 0.0)
+    return masked
+
 # Create a async frame generator as custom source
 async def custom_frame_generator():
     try:
@@ -97,6 +107,7 @@ async def custom_frame_generator():
         tabledistance = 1200 # Default distance to table
         # Open video stream
         device = RealSense(DeviceSrc)
+        model = getModel()
         # loop over stream until its terminated
         while True:
             ########################
@@ -104,8 +115,7 @@ async def custom_frame_generator():
             ########################
             # read frames
             colorframe = device.getcolorstream()
-            #if fileFlag:
-            #    colorframe = cv2.cvtColor(colorframe, cv2.COLOR_RGB2BGR) #Reading from BAG alters the color space and needs to be fixed
+            colorframe = cv2.cvtColor(colorframe, cv2.COLOR_RGB2BGR) #Reading from BAG alters the color space and needs to be fixed
             depthframe = device.getdepthstream()
             # store time in seconds since the epoch (UTC)
             timestamp = time.time()
@@ -114,7 +124,7 @@ async def custom_frame_generator():
                 break
             # process frame
             ########################
-            # Calibation           #
+            # Calibration           #
             ########################
             global calibrationMatrix
             global oldCalibration
@@ -200,8 +210,19 @@ async def custom_frame_generator():
                 #     #cv2.putText(frame, "CALIBRATED (4)", (25, 25), cv2.FONT_HERSHEY_SIMPLEX, 0.25, (0, 0, 255), 1, cv2.LINE_AA)
                 #     #cv2.putText(frame, "NOT CALIBRATED", (25, 25), cv2.FONT_HERSHEY_SIMPLEX, 0.25, (0, 0, 255), 1, cv2.LINE_AA)
 
-            pytorchMask = SegmentHands(colorframe)
-            frame = getcoloredMask(colorframe, pytorchMask)
+            resizedColorframe = cv2.resize(colorframe, dsize=(224, 224))
+            resizedColorframe = resizedColorframe.astype(np.float32)
+            resizedColorframe = np.atleast_3d(resizedColorframe)
+
+            means = [103.939, 116.779, 123.68]
+
+            for i in range(min(resizedColorframe.shape[2], len(means))):
+                resizedColorframe[:, :, i] -= means[i]
+
+            resizedColorframe = resizedColorframe[:, :, ::-1]
+            prediction = model.predict(np.array([resizedColorframe]))[0]
+            prediction = prediction.reshape((256, 256, 2)).argmax(axis=2)
+            frame = resizedColorframe#getcoloredMask(colorframe, prediction)
             # yield frame
             yield frame
             # sleep for sometime
