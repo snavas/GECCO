@@ -27,9 +27,10 @@ import numpy as np
 import json
 import os
 import glob
-from models.fcn import fcn_32_mobilenet
+from models.fcn import fcn_32_mobilenet, fcn_8_mobilenet
+from models.segnet import mobilenet_segnet
 
-checkpoints_path="D:/paula/Documents/NotFun/Studium/Master_Geoinformatics/GECCO/GECCO/checkpoints\\fcn_32_mobilenet_1"
+checkpoints_path="D:/paula/Documents/NotFun/Studium/Master_Geoinformatics/GECCO/GECCO/checkpoints\\mobilenet_segnet"
 
 #################################################################################
 HostPort = 5555
@@ -79,7 +80,7 @@ def getModel():
         open(checkpoints_path + "_config.json", "r").read())
     latest_weights = find_latest_checkpoint()
     assert (latest_weights is not None), "Checkpoint not found."
-    model = fcn_32_mobilenet(
+    model = mobilenet_segnet(
         model_config['n_classes'], input_height=model_config['input_height'],
         input_width=model_config['input_width'])
     print("loaded weights ", latest_weights)
@@ -221,8 +222,8 @@ async def custom_frame_generator():
 
             resizedColorframe = resizedColorframe[:, :, ::-1]
             prediction = model.predict(np.array([resizedColorframe]))[0]
-            prediction = prediction.reshape((256, 256, 2)).argmax(axis=2)
-            frame = resizedColorframe#getcoloredMask(colorframe, prediction)
+            prediction = prediction.reshape((112, 112, 2)).argmax(axis=2)
+            frame = getcoloredMask(colorframe, prediction)
             # yield frame
             yield frame
             # sleep for sometime
