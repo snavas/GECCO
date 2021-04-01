@@ -61,6 +61,13 @@ class RealSense(Device):
         self.depth_scale = depth_sensor.get_depth_scale()
         print("<*> Depth Scale is: ", self.depth_scale)
 
+        # increase lase power
+        laser_range = depth_sensor.get_option_range(rs.option.laser_power)
+        depth_sensor.set_option(rs.option.laser_power, laser_range.max)
+
+        # turn off auto-exposure
+        depth_sensor.set_option(rs.option.enable_auto_exposure, False)
+
         # We will be removing the background of objects more than
         #  clipping_distance_in_meters meters away
         clipping_distance_in_meters = 1.15  # 1 meter
