@@ -173,11 +173,11 @@ async def client_iterator(client):
 async def netgear_async_playback(pattern):
     try:
         # define and launch Client with `receive_mode = True`
-        server = NetGear_Async()  # invalid protocol
+        server = NetGear_Async(address = PeerAddress, port = PeerPort)  # invalid protocol
         server.config["generator"] = custom_frame_generator(pattern.depth)
         server.launch()
         # define and launch Client with `receive_mode = True` and timeout = 5.0
-        client = NetGear_Async(receive_mode=True, timeout=5.0).launch()
+        client = NetGear_Async(port = HostPort,receive_mode=True, timeout=5.0).launch()
         # gather and run tasks
         input_coroutines = [server.task, client_iterator(client)]
         res = await asyncio.gather(*input_coroutines, return_exceptions=True)
