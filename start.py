@@ -173,16 +173,11 @@ async def client_iterator(client):
 async def netgear_async_playback(pattern):
     try:
         # define and launch Client with `receive_mode = True`
-        options = {'compression_param': cv2.IMREAD_COLOR}
-        client = NetGear_Async(
-            port = HostPort, pattern=1, receive_mode=True, **options
-        ).launch()
-        options = {'compression_format': '.jpg', 'compression_param': [cv2.IMWRITE_JPEG_QUALITY, 50]}
-        server = NetGear_Async(
-            address = PeerAddress, port = PeerPort, pattern=1, **options
-        )
+        server = NetGear_Async()  # invalid protocol
         server.config["generator"] = custom_frame_generator(pattern.depth)
         server.launch()
+        # define and launch Client with `receive_mode = True` and timeout = 5.0
+        client = NetGear_Async(receive_mode=True, timeout=5.0).launch()
         # gather and run tasks
         input_coroutines = [server.task, client_iterator(client)]
         res = await asyncio.gather(*input_coroutines, return_exceptions=True)
@@ -190,8 +185,18 @@ async def netgear_async_playback(pattern):
         print(e)
         pass
     finally:
-        server.close(skip_loop=True)
-        client.close(skip_loop=True)
+        try:
+            server
+        except Exception as e:
+            print("server undefined")
+        else:
+            server.close(skip_loop=True)
+        try:
+            client
+        except Exception as e:
+            print("client undefined")
+        else:
+            client.close(skip_loop=True)
 
 def getOptions(args=sys.argv[1:]):
     parser = argparse.ArgumentParser(description="PyMote")
