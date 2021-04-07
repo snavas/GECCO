@@ -141,7 +141,7 @@ async def custom_frame_generator():
                     #cv2.putText(frame, "NOT CALIBRATED", (25, 25), cv2.FONT_HERSHEY_SIMPLEX, 0.25, (0, 0, 255), 1, cv2.LINE_AA)
             # frame = reducer(frame, percentage=40)  # reduce frame by 40%
             # yield frame
-            yield frame
+            yield colorframe
             # sleep for sometime
             await asyncio.sleep(0.00001)
         # close stream
@@ -180,13 +180,11 @@ async def netgear_async_playback(pattern):
     try:
         # define and launch Client with `receive_mode = True`
         # options = {'compression_param': cv2.IMREAD_COLOR}
-        server = NetGear_Async(
-            source=custom_frame_generator(), logging=True
-        )  # invalid protocol
+        server = NetGear_Async(logging=True)  # invalid protocol
         server.config["generator"] = custom_frame_generator()
         server.launch()
-        # define and launch Client with `receive_mode = True` and timeout = 12.0
-        client = NetGear_Async(logging=True, timeout=12.0, receive_mode=True).launch()
+        # define and launch Client with `receive_mode = True` and timeout = 5.0
+        client = NetGear_Async(logging=True, receive_mode=True, timeout=5.0).launch()
         # gather and run tasks
         input_coroutines = [server.task, client_iterator(client)]
         res = await asyncio.gather(*input_coroutines, return_exceptions=True)
