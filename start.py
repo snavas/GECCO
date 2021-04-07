@@ -180,15 +180,13 @@ async def netgear_async_playback(pattern):
     try:
         # define and launch Client with `receive_mode = True`
         # options = {'compression_param': cv2.IMREAD_COLOR}
-        client = NetGear_Async(
-            port = HostPort, pattern=1, receive_mode=True#, **options
-        ).launch()
-        # options = {'compression_format': '.jpg', 'compression_param': [cv2.IMWRITE_JPEG_QUALITY, 50]}
         server = NetGear_Async(
-            address = PeerAddress, port = PeerPort, pattern=1#, **options
-        )
+            source=custom_frame_generator(), logging=True
+        )  # invalid protocol
         server.config["generator"] = custom_frame_generator()
         server.launch()
+        # define and launch Client with `receive_mode = True` and timeout = 12.0
+        client = NetGear_Async(logging=True, timeout=12.0, receive_mode=True).launch()
         # gather and run tasks
         input_coroutines = [server.task, client_iterator(client)]
         res = await asyncio.gather(*input_coroutines, return_exceptions=True)
@@ -196,27 +194,20 @@ async def netgear_async_playback(pattern):
         print(e)
         pass
     finally:
-        server.close(skip_loop=True)
-        client.close(skip_loop=True)
+        try:
+            server
+        except Exception as e:
+            print("server undefined")
+        else:
+            server.close(skip_loop=True)
+        try:
+            client
+        except Exception as e:
+            print("client undefined")
+        else:
+            client.close(skip_loop=True)
 
 # Create a async function where you want to show/manipulate your received frames
-async def main():
-    cv2.namedWindow("Output Frame", cv2.WND_PROP_FULLSCREEN)
-    cv2.setWindowProperty("Output Frame", cv2.WND_PROP_FULLSCREEN, cv2.WINDOW_NORMAL)
-    # loop over Client's Asynchronous Frame Generator
-    async for frame in client.recv_generator():
-        # {do something with received frames here}
-        # Show output window
-        cv2.imshow("Output Frame", frame)
-        if overlay:
-            hwnd = win32gui.FindWindow(None, "Output Frame")
-            win32gui.SetWindowLong(hwnd, win32con.GWL_EXSTYLE, win32gui.GetWindowLong(hwnd, win32con.GWL_EXSTYLE) | win32con.WS_EX_LAYERED)  # no idea, but it goes together with transparency
-            win32gui.SetLayeredWindowAttributes(hwnd, win32api.RGB(0, 0, 0), 0, win32con.LWA_COLORKEY)  # black as transparent
-            win32gui.SetWindowPos(hwnd, win32con.HWND_TOPMOST, 0, 0, GetSystemMetrics(0), GetSystemMetrics(1), 0)  # always on top
-            win32gui.ShowWindow(hwnd, win32con.SW_MAXIMIZE)  # maximiced
-        key = cv2.waitKey(1) & 0xFF
-        # await before continuing
-        await asyncio.sleep(0.01)
 
 def getOptions(args=sys.argv[1:]):
     parser = argparse.ArgumentParser(description="PyMote")
@@ -249,21 +240,4 @@ if __name__ == '__main__':
         DeviceSrc = options.file
 
     log = open("logs/log_"+str(int(time.time()))+".log", "x")
-    #asyncio.run(netgear_async_playback(options))
-
-    asyncio.set_event_loop(server.loop)
-    asyncio.set_event_loop(client.loop)
-    server.config["generator"] = custom_frame_generator()
-    server.launch()
-    client.launch()
-    try:
-        # run your main function task until it is complete
-        server.loop.run_until_complete(server.task)
-        client.loop.run_until_complete(main())
-    except (KeyboardInterrupt, SystemExit):
-        # wait for interrupts
-        pass
-    finally:
-        # finally close the server
-        server.close()
-        client.close()
+    asyncio.run(netgear_async_playback(options))
