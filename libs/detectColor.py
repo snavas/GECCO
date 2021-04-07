@@ -48,10 +48,11 @@ def getUpperLowerSquare(colorMarkers, colorframe):
     y2 = int(colorMarkers[1][0][1])
     center = calculateCenter(x1, y1, x2, y2)
 
-    innerRectangleXIni = center[0] - 15
-    innerRectangleYIni = center[1] - 15
-    innerRectangleXFin = center[0] + 15
-    innerRectangleYFin = center[1] + 15
+    extent = 15
+    innerRectangleXIni = center[0] - extent
+    innerRectangleYIni = center[1] - extent
+    innerRectangleXFin = center[0] + extent
+    innerRectangleYFin = center[1] + extent
     roi = colorframe[innerRectangleYIni +
                      1:innerRectangleYFin, innerRectangleXIni +
                                            1:innerRectangleXFin]
@@ -62,6 +63,26 @@ def getUpperLowerSquare(colorMarkers, colorframe):
     upper = np.array(
         [hsvRoi[:, :, 0].max() + 3, hsvRoi[:, :, 1].max() + 3, hsvRoi[:, :, 2].max() + 3])
     
+    return lower, upper
+
+def getUpperLowerCircle(colorMarkers, colorframe):
+    x1 = int(colorMarkers[0][0][0])
+    y1 = int(colorMarkers[0][0][1])
+    x2 = int(colorMarkers[1][0][0])
+    y2 = int(colorMarkers[1][0][1])
+    center = calculateCenter(x1, y1, x2, y2)
+
+    r = 15
+    rectX = (center[0] - r)
+    rectY = (center[1] - r)
+    roi = colorframe[rectY:(rectY + 2 * r), rectX:(rectX + 2 * r)]
+    hsvRoi = cv2.cvtColor(roi, cv2.COLOR_BGR2HSV)
+
+    lower = np.array(
+        [hsvRoi[:, :, 0].min() - 3, hsvRoi[:, :, 1].min() - 3, hsvRoi[:, :, 2].min() - 3])
+    upper = np.array(
+        [hsvRoi[:, :, 0].max() + 3, hsvRoi[:, :, 1].max() + 3, hsvRoi[:, :, 2].max() + 3])
+
     return lower, upper
 
 def detectcolor3D(colorframe, lower_color, upper_color):

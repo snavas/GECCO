@@ -45,6 +45,34 @@ def getUpperLowerSquare(colorMarkers, colorframe):
     cv2.rectangle(colorframe, (innerRectangleXIni, innerRectangleYIni),
                   (innerRectangleXFin, innerRectangleYFin), (255, 0, 0), 0)
     return average, maxSense, colorframe
+def getUpperLowerCircle(colorMarkers, colorframe):
+    x1 = int(colorMarkers[0][0][0])
+    y1 = int(colorMarkers[0][0][1])
+    x2 = int(colorMarkers[1][0][0])
+    y2 = int(colorMarkers[1][0][1])
+    center = calculateCenter(x1, y1, x2, y2)
+
+    r = 15
+    rectX = (center[0] - r)
+    rectY = (center[1] - r)
+    roi = colorframe[rectY:(rectY + 2 * r), rectX:(rectX + 2 * r)]
+    hsvRoi = cv2.cvtColor(roi, cv2.COLOR_BGR2HSV)
+
+    lower = np.array(
+        [hsvRoi[:, :, 0].min(), hsvRoi[:, :, 1].min(), hsvRoi[:, :, 2].min()])
+    upper = np.array(
+        [hsvRoi[:, :, 0].max(), hsvRoi[:, :, 1].max(), hsvRoi[:, :, 2].max()])
+    h = hsvRoi[:, :, 0]
+    s = hsvRoi[:, :, 1]
+    v = hsvRoi[:, :, 2]
+
+    average = np.array([np.average(h), np.average(s), np.average(v)])
+    maxSense = np.array([max(abs(lower[0] - average[0]), abs(upper[0] - average[0])),
+                         max(abs(lower[1] - average[1]), abs(upper[1] - average[1])),
+                         max(abs(lower[2] - average[2]), abs(upper[2] - average[2]))])
+    cv2.circle(colorframe, (center[0], center[1]),
+                  15, (255, 0, 0), 0)
+    return average, maxSense, colorframe
 
 def main():
     device = RealSense('752112070204')
@@ -77,13 +105,13 @@ def main():
                         colorMarkersB.append(c)
 
             if len(colorMarkersA) == 2 & len(colorMarkersB) == 2:
-                averageA, maxSenseA, colorframe = getUpperLowerSquare(colorMarkersA, colorframe)
+                averageA, maxSenseA, colorframe = getUpperLowerCircle(colorMarkersA, colorframe)
                 lower_pinkA = np.array(
                     [averageA[0] - maxSenseA[0], averageA[1] - maxSenseA[1], averageA[2] - maxSenseA[2]])
                 upper_pinkA = np.array(
                     [averageA[0] + maxSenseA[0], averageA[1] + maxSenseA[1], averageA[2] + maxSenseA[2]])
 
-                averageA, maxSenseB, colorframe = getUpperLowerSquare(colorMarkersB, colorframe)
+                averageA, maxSenseB, colorframe = getUpperLowerCircle(colorMarkersB, colorframe)
                 lower_pinkB = np.array(
                     [averageA[0] - maxSenseB[0], averageA[1] - maxSenseB[1], averageA[2] - maxSenseB[2]])
                 upper_pinkB = np.array(
@@ -100,7 +128,7 @@ def main():
                             cv2.LINE_AA)
 
             elif len(colorMarkersA) == 2:
-                average, maxSense, colorframe = getUpperLowerSquare(colorMarkersA, colorframe)
+                average, maxSense, colorframe = getUpperLowerCircle(colorMarkersA, colorframe)
                 lower_pink = np.array(
                     [average[0] - maxSense[0], average[1] - maxSense[1], average[2] - maxSense[2]])
                 upper_pink = np.array(
@@ -110,7 +138,7 @@ def main():
                             (255, 0, 0), 1,
                             cv2.LINE_AA)
             elif len(colorMarkersB) == 2:
-                average, maxSense, colorframe = getUpperLowerSquare(colorMarkersB, colorframe)
+                average, maxSense, colorframe = getUpperLowerCircle(colorMarkersB, colorframe)
                 lower_pink = np.array(
                     [average[0] - maxSense[0], average[1] - maxSense[1], average[2] - maxSense[2]])
                 upper_pink = np.array(
