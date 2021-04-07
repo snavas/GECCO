@@ -83,7 +83,7 @@ def detectcolor3D(colorframe, lower_color, upper_color):
 
     if len(colorMarkersA) == 2 & len(colorMarkersB) == 2:
         lower_colorA, upper_colorA = getUpperLowerSquare(colorMarkersA, colorframe)
-        lower_colorB, upper_colorB = getUpperLowerSquare(colorMarkersA, colorframe)
+        lower_colorB, upper_colorB = getUpperLowerSquare(colorMarkersB, colorframe)
         lower_color = np.array([min(lower_colorA[0], lower_colorB[0]),
                                min(lower_colorA[1], lower_colorB[1]),
                                min(lower_colorA[2], lower_colorB[2])])
