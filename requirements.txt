@@ -38,7 +38,7 @@ threadpoolctl==2.1.0
 tqdm==4.56.1
 typing-extensions==3.7.4.3
 urllib3==1.26.3
-vidgear==0.1.8
+vidgear==0.2.0
 websocket-client==0.57.0
 wincertstore==0.2
 yarl==1.6.3
