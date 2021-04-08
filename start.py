@@ -214,7 +214,7 @@ def getOptions(args=sys.argv[1:]):
     parser.add_argument("-p", "--port", type=int, help="Peer port number")
     parser.add_argument("-f", "--file", help="Simulate camera sensor from .bag file")
     parser.add_argument("-d", "--depth", help="dont use depth camera (faster)", action='store_false')
-    parser.add_argument("-c", "--colorspace", help="dont use depth camera (faster)", choices=['hsv', 'lab', 'ycrcb', 'rgb'], default='lab')
+    parser.add_argument("-c", "--colorspace", help="choose the colorspace for color segmentation", choices=['hsv', 'lab', 'ycrcb', 'rgb'], default='lab')
     #parser.add_argument("-v", "--verbose",dest='verbose',action='store_true', help="Verbose mode.")
     options = parser.parse_args(args)
     return options
