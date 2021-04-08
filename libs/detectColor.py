@@ -41,7 +41,7 @@ def detectcolorFlat(colorframe, lower_color, upper_color):
 
     return lower_color, upper_color
 
-def getUpperLowerSquare(colorMarkers, colorframe):
+def getUpperLowerSquare(colorMarkers, colorframe, colorspace):
     x1 = int(colorMarkers[0][0][0])
     y1 = int(colorMarkers[0][0][1])
     x2 = int(colorMarkers[1][0][0])
@@ -56,7 +56,7 @@ def getUpperLowerSquare(colorMarkers, colorframe):
     roi = colorframe[innerRectangleYIni +
                      1:innerRectangleYFin, innerRectangleXIni +
                                            1:innerRectangleXFin]
-    hsvRoi = cv2.cvtColor(roi, cv2.COLOR_BGR2HSV)
+    hsvRoi = cv2.cvtColor(roi, colorspace)
 
     lower = np.array(
         [hsvRoi[:, :, 0].min() - 3, hsvRoi[:, :, 1].min() - 3, hsvRoi[:, :, 2].min() - 3])
@@ -65,7 +65,7 @@ def getUpperLowerSquare(colorMarkers, colorframe):
     
     return lower, upper
 
-def getUpperLowerCircle(colorMarkers, colorframe):
+def getUpperLowerCircle(colorMarkers, colorframe, colorspace):
     x1 = int(colorMarkers[0][0][0])
     y1 = int(colorMarkers[0][0][1])
     x2 = int(colorMarkers[1][0][0])
@@ -76,7 +76,7 @@ def getUpperLowerCircle(colorMarkers, colorframe):
     rectX = (center[0] - r)
     rectY = (center[1] - r)
     roi = colorframe[rectY:(rectY + 2 * r), rectX:(rectX + 2 * r)]
-    hsvRoi = cv2.cvtColor(roi, cv2.COLOR_BGR2HSV)
+    hsvRoi = cv2.cvtColor(roi, colorspace)
 
     lower = np.array(
         [hsvRoi[:, :, 0].min() - 3, hsvRoi[:, :, 1].min() - 3, hsvRoi[:, :, 2].min() - 3])
@@ -85,7 +85,7 @@ def getUpperLowerCircle(colorMarkers, colorframe):
 
     return lower, upper
 
-def detectcolor3D(colorframe, lower_color, upper_color):
+def detectcolor3D(colorframe, lower_color, upper_color, colorspace):
     grey = cv2.cvtColor(colorframe, cv2.COLOR_RGB2GRAY)
     aruco_dict = aruco.Dictionary_get(aruco.DICT_4X4_250)
     parameters = aruco.DetectorParameters_create()
@@ -103,8 +103,8 @@ def detectcolor3D(colorframe, lower_color, upper_color):
                 colorMarkersB.append(c)
 
     if len(colorMarkersA) == 2 & len(colorMarkersB) == 2:
-        lower_colorA, upper_colorA = getUpperLowerSquare(colorMarkersA, colorframe)
-        lower_colorB, upper_colorB = getUpperLowerSquare(colorMarkersB, colorframe)
+        lower_colorA, upper_colorA = getUpperLowerSquare(colorMarkersA, colorframe, colorspace)
+        lower_colorB, upper_colorB = getUpperLowerSquare(colorMarkersB, colorframe, colorspace)
         lower_color = np.array([min(lower_colorA[0], lower_colorB[0]),
                                min(lower_colorA[1], lower_colorB[1]),
                                min(lower_colorA[2], lower_colorB[2])])

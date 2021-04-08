@@ -18,14 +18,14 @@ def angle(vector1, vector2):
     length2 = math.sqrt(vector2[0] * vector2[0] + vector2[1] * vector2[1])
     return math.acos((vector1[0] * vector2[0] + vector1[1] * vector2[1])/ (length1 * length2))
 
-def getHand(colorframe, uncaliColorframe):
+def getHand(colorframe, uncaliColorframe, colorspace):
     def gethandmask(img):
         # Convert BGR to HSV
-        hsv = cv2.cvtColor(img, cv2.COLOR_BGR2HSV)
+        colorConverted = cv2.cvtColor(img, colorspace)
         global lower_color, upper_color
-        lower_color,upper_color = color.detectcolor3D(uncaliColorframe, lower_color, upper_color)
+        lower_color,upper_color = color.detectcolor3D(uncaliColorframe, lower_color, upper_color, colorspace)
         # Threshold the HSV image to get only color colors
-        mask = cv2.inRange(hsv, lower_color, upper_color)
+        mask = cv2.inRange(colorConverted, lower_color, upper_color)
         # Bitwise-AND mask and original image
         # res = cv2.bitwise_and(colorframe, colorframe, mask=mask)
         # remove noise

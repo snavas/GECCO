@@ -28,8 +28,15 @@ overlay = True
 DeviceSrc = "752112070204"
 #fileFlag = True
 
+colorspacedict = {
+    "hsv": cv2.COLOR_BGR2HSV,
+    "lab": cv2.COLOR_BGR2LAB,
+    "ycrcb": cv2.COLOR_BGR2YCrCb,
+    "rgb": cv2.COLOR_BGR2RGB
+}
+
 # Create a async frame generator as custom source
-async def custom_frame_generator(useDepth):
+async def custom_frame_generator(pattern):
     try:
         # Get global log variable
         global log
@@ -58,7 +65,7 @@ async def custom_frame_generator(useDepth):
             global screen_corners, target_corners
             if continuousCalibration == False and len(target_corners) != 4:
                 frame, screen_corners, target_corners = cal.calibrateViaARUco(colorframe, screen_corners, target_corners)
-                if len(target_corners) == 4 and useDepth:
+                if len(target_corners) == 4 and pattern.depth:
                     depthframe = device.getdepthstream()
                     tabledistance = depthframe[int(target_corners[1][1])][int(target_corners[1][0])]
                     if tabledistance == 0:
@@ -75,12 +82,13 @@ async def custom_frame_generator(useDepth):
                 # Hand Detection       #
                 ########################
                 frame = np.zeros(colorframe.shape, dtype='uint8')
-                results, hands, points = hand.getHand(caliColorframe, colorframe)
+                colorspace = colorspacedict[pattern.colorspace]
+                results, hands, points = hand.getHand(caliColorframe, colorframe, colorspace)
                 #drawings = draw.getDraw(colorframe)
                 #frame = cv2.bitwise_or(result, drawings)
 
                 if hands:
-                    if useDepth:
+                    if pattern.depth:
                         depthframe = device.getdepthstream()
                         caliDepthframe = cv2.warpPerspective(depthframe, M, (1280, 720))
                         # Print and log the fingertips
@@ -174,7 +182,7 @@ async def netgear_async_playback(pattern):
     try:
         # define and launch Client with `receive_mode = True`
         server = NetGear_Async(address = PeerAddress, port = PeerPort)  # invalid protocol
-        server.config["generator"] = custom_frame_generator(pattern.depth)
+        server.config["generator"] = custom_frame_generator(pattern)
         server.launch()
         # define and launch Client with `receive_mode = True` and timeout = 5.0
         client = NetGear_Async(port = HostPort,receive_mode=True, timeout=5.0).launch()
@@ -206,6 +214,7 @@ def getOptions(args=sys.argv[1:]):
     parser.add_argument("-p", "--port", type=int, help="Peer port number")
     parser.add_argument("-f", "--file", help="Simulate camera sensor from .bag file")
     parser.add_argument("-d", "--depth", help="dont use depth camera (faster)", action='store_false')
+    parser.add_argument("-c", "--colorspace", help="dont use depth camera (faster)", choices=['hsv', 'lab', 'ycrcb', 'rgb'], default='lab')
     #parser.add_argument("-v", "--verbose",dest='verbose',action='store_true', help="Verbose mode.")
     options = parser.parse_args(args)
     return options
