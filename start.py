@@ -189,7 +189,7 @@ async def netgear_async_playback(pattern):
         server.config["generator"] = custom_frame_generator(pattern)
         server.launch()
         # define and launch Client with `receive_mode = True` and timeout = 5.0
-        client = NetGear_Async(port = HostPort,receive_mode=True, timeout=5.0).launch()
+        client = NetGear_Async(port = HostPort,receive_mode=True, timeout=float("inf")).launch()
         # gather and run tasks
         input_coroutines = [server.task, client_iterator(client)]
         res = await asyncio.gather(*input_coroutines, return_exceptions=True)

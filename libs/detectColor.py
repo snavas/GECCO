@@ -103,8 +103,8 @@ def detectcolor3D(colorframe, lower_color, upper_color, colorspace):
                 colorMarkersB.append(c)
 
     if len(colorMarkersA) == 2 & len(colorMarkersB) == 2:
-        lower_colorA, upper_colorA = getUpperLowerSquare(colorMarkersA, colorframe, colorspace)
-        lower_colorB, upper_colorB = getUpperLowerSquare(colorMarkersB, colorframe, colorspace)
+        lower_colorA, upper_colorA = getUpperLowerCircle(colorMarkersA, colorframe, colorspace)
+        lower_colorB, upper_colorB = getUpperLowerCircle(colorMarkersB, colorframe, colorspace)
         lower_color = np.array([min(lower_colorA[0], lower_colorB[0]),
                                min(lower_colorA[1], lower_colorB[1]),
                                min(lower_colorA[2], lower_colorB[2])])
@@ -112,8 +112,8 @@ def detectcolor3D(colorframe, lower_color, upper_color, colorspace):
                                max(upper_colorA[1], upper_colorB[1]),
                                max(upper_colorA[2], upper_colorB[2])])
     elif len(colorMarkersA) == 2:
-        lower_color, upper_color = getUpperLowerSquare(colorMarkersA, colorframe)
+        lower_color, upper_color = getUpperLowerSquare(colorMarkersA, colorframe, colorspace)
     elif len(colorMarkersB) == 2:
-        lower_color, upper_color = getUpperLowerSquare(colorMarkersB, colorframe)
+        lower_color, upper_color = getUpperLowerSquare(colorMarkersB, colorframe, colorspace)
 
     return lower_color, upper_color
