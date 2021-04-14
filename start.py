@@ -166,7 +166,7 @@ async def custom_frame_generator(pattern):
 async def client_iterator(client):
     # loop over Client's Asynchronous Frame Generator
     cv2.namedWindow("Output Frame", cv2.WND_PROP_FULLSCREEN)
-    cv2.setWindowProperty("Output Frame", cv2.WND_PROP_FULLSCREEN, cv2.WINDOW_NORMAL)
+    cv2.setWindowProperty("Output Frame", cv2.WND_PROP_FULLSCREEN, cv2.WINDOW_FULLSCREEN)
     async for frame in client.recv_generator():
         # do something with received frames here
         # print("frame recieved")
