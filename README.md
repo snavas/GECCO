@@ -67,6 +67,10 @@ python start.py -o 5555 -a [IP of first PC] -p 5454
 ```
 python start.py -s
 ```
+### Example: Reading from File ([example .bag file](https://uni-muenster.sciebo.de/s/x6W2XDy0J4oUFNe))
+```
+python start.py -f file.bag
+```
 ## Known Issues
 
 ## Description
