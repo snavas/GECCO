@@ -22,7 +22,7 @@ opencv-contrib-python==4.3.0.36
 pafy==0.5.5
 Pillow==8.1.1
 pycryptodome==3.10.1
-pyrealsense2==2.41.0.2666
+pyrealsense2==2.44.0.3073
 pyscreenshot==2.3
 PySocks==1.7.1
 pywin32==300
