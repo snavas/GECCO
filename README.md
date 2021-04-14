@@ -26,26 +26,9 @@ Otherwise, windows users can install the RealSense SDK 2.0 from the release tab 
 https://github.com/IntelRealSense/librealsense/tree/master/wrappers/python#building-from-source.
 
 ## Dependencies
-- [numpy](https://github.com/begeistert/nupy)
-```
-pip install numpy
-```
-- [opencv](https://github.com/skvark/opencv-python)
-```
-pip install opencv-contrib-python==4.3.0.36
-```
-- [vidgear (asyncio)](https://github.com/abhiTronix/vidgear)
-```
-pip install vidgear[asyncio]==0.1.8 
-```
-- [sklearn](https://github.com/scikit-learn/scikit-learn)
-```
-pip install sklearn
-```
-- [pywin32](https://github.com/mhammond/pywin32)
-```
-pip install pywin32
-```
+All dependencies are listed in the ```requirements.txt``` and can be installed from the console with the following command: 
+
+```pip install -r requirements.txt ```
 
 
 ## Installation
@@ -56,11 +39,31 @@ cd GECCO
 
 ## Use
 
-### Peer Mode
+### Arguments
+
+| short| long         | value        | default | description                                                                              |
+| ---- | ------------ | ------------ | ------- | ---------------------------------------------------------------------------------------- |
+| -s   | --standalone | -            | -       | Standalone mode                                                                          |
+| -o   | --host       |  ```int```   | -       | Host port number                                                                         |
+| -a   | --address    | -            | -       | Peer IP address                                                                          |
+| -p   | --port       | ```int```    | -       | Peer port number                                                                         |
+| -f   | --file       | ```string``` | -       | Path to .bag-file to simulate camera. (Does not work if camera is still connected!)      |
+| -d   | --depth      | -            | -       | Dont use depth image to increase performance                                             |
+| -c   | --colorspace | ```['hsv', 'lab', 'ycrcb', 'rgb', 'luv', 'xyz', 'hls', 'yuv']``` | ```'lab'``` | Colorspace used  for color segmentation. Popular choice is 'hsv' but we achieved best results with 'lab' |
+| -v   | --verbose    | -            | -       | Enable vidgear logging                                                                   |
+
+
+### Example: Peer Mode
+Run following command on first PC:
 ```
-python start.py -o [HOST PORT NUMBER] -a [PEER IP ADDRESS] -p [PEER PORT NUMBER]
+python start.py -o 5454 -a [IP of second PC] -p 5555
 ```
-### Standalone Mode
+Run following command on second PC:
+```
+python start.py -o 5555 -a [IP of first PC] -p 5454
+```
+
+### Example: Standalone Mode
 ```
 python start.py -s
 ```

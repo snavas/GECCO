@@ -185,11 +185,11 @@ async def client_iterator(client):
 async def netgear_async_playback(pattern):
     try:
         # define and launch Client with `receive_mode = True`
-        server = NetGear_Async(address = PeerAddress, port = PeerPort)  # invalid protocol
+        server = NetGear_Async(address = PeerAddress, port = PeerPort, logging=pattern.logging)  # invalid protocol
         server.config["generator"] = custom_frame_generator(pattern)
         server.launch()
         # define and launch Client with `receive_mode = True` and timeout = 5.0
-        client = NetGear_Async(port = HostPort,receive_mode=True, timeout=float("inf")).launch()
+        client = NetGear_Async(port = HostPort,receive_mode=True, timeout=float("inf"), logging=pattern.logging).launch()
         # gather and run tasks
         input_coroutines = [server.task, client_iterator(client)]
         res = await asyncio.gather(*input_coroutines, return_exceptions=True)
@@ -221,7 +221,7 @@ def getOptions(args=sys.argv[1:]):
     parser.add_argument("-c", "--colorspace",
                         help="choose the colorspace for color segmentation. Popular choice is 'hsv' but we achieved best results with 'lab'",
                         choices=['hsv', 'lab', 'ycrcb', 'rgb', 'luv', 'xyz', 'hls', 'yuv'], default='lab')
-    #parser.add_argument("-v", "--verbose",dest='verbose',action='store_true', help="Verbose mode.")
+    parser.add_argument("-v", "--verbose", dest='logging', action='store_true', help="enable vidgear logging")
     options = parser.parse_args(args)
     return options
 
