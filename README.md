@@ -45,7 +45,7 @@ cd GECCO
 | ---- | ------------ | ------------ | ------- | ---------------------------------------------------------------------------------------- |
 | -s   | --standalone | -            | -       | Standalone mode                                                                          |
 | -o   | --host       |  ```int```   | -       | Host port number                                                                         |
-| -a   | --address    | -            | -       | Peer IP address                                                                          |
+| -a   | --address    | ```string``` | -       | Peer IP address                                                                          |
 | -p   | --port       | ```int```    | -       | Peer port number                                                                         |
 | -f   | --file       | ```string``` | -       | Path to .bag-file to simulate camera. (Does not work if camera is still connected!)      |
 | -d   | --depth      | -            | -       | Dont use depth image to increase performance                                             |
@@ -68,7 +68,8 @@ python start.py -o 5555 -a [IP of first PC] -p 5454
 ```
 python start.py -s
 ```
-### Example: Reading from File ([example .bag file](https://uni-muenster.sciebo.de/s/x6W2XDy0J4oUFNe))
+### Example: Standalone + reading from file
+The following example is very useful for testing GECCO in your own local computer without access to a Realsense camera. You need to download our [example .bag file](https://uni-muenster.sciebo.de/s/x6W2XDy0J4oUFNe)
 ```
 python start.py -f file.bag
 ```
