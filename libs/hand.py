@@ -18,7 +18,7 @@ def angle(vector1, vector2):
     length2 = math.sqrt(vector2[0] * vector2[0] + vector2[1] * vector2[1])
     return math.acos((vector1[0] * vector2[0] + vector1[1] * vector2[1])/ (length1 * length2))
 
-def getHand(colorframe, uncaliColorframe, colorspace):
+def getHand(colorframe, uncaliColorframe, colorspace, edges):
     def gethandmask(img):
         # Convert BGR to HSV
         colorConverted = cv2.cvtColor(img, colorspace)
@@ -134,6 +134,8 @@ def getHand(colorframe, uncaliColorframe, colorspace):
             cv2.drawContours(mask, [contour], -1, 255, -1)  # Draw filled contour in mask
             tempOut = np.zeros_like(handmask)  # Extract out the object and place into output image
             tempOut[mask == 255] = handmask[mask == 255]
+            if edges:
+                tempOut = cv2.dilate(tempOut, cv2.getStructuringElement(cv2.MORPH_RECT, (15, 15)), iterations=1)
             arrayOut.append(tempOut)
         return arrayOut
 
@@ -161,6 +163,13 @@ def getHand(colorframe, uncaliColorframe, colorspace):
     colorframes = []
     for curMask in handMasks:
         temp = colorframe.copy()
+        if edges:
+            canny_output = cv2.Canny(temp, 100, 200)
+            temp = np.zeros((canny_output.shape[0], canny_output.shape[1], 3), dtype=np.uint8)
+            contours, hierarchy = cv2.findContours(canny_output, cv2.RETR_TREE, cv2.CHAIN_APPROX_SIMPLE)
+            for i in range(len(contours)):
+                edge_color = np.mean( np.array([lower_color, upper_color]), axis=0 )
+                cv2.drawContours(temp, contours, i, edge_color, 2, cv2.LINE_8, hierarchy, 0)
         temp = cv2.bitwise_and(temp, temp, mask=curMask)
         colorframes.append(temp)
     return colorframes, handList, fingerList

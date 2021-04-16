@@ -87,7 +87,7 @@ async def custom_frame_generator(pattern):
                 ########################
                 frame = np.zeros(colorframe.shape, dtype='uint8')
                 colorspace = colorspacedict[pattern.colorspace]
-                results, hands, points = hand.getHand(caliColorframe, colorframe, colorspace)
+                results, hands, points = hand.getHand(caliColorframe, colorframe, colorspace, pattern.edges)
                 #drawings = draw.getDraw(colorframe)
                 #frame = cv2.bitwise_or(result, drawings)
 
@@ -218,6 +218,7 @@ def getOptions(args=sys.argv[1:]):
     parser.add_argument("-p", "--port", type=int, help="Peer port number")
     parser.add_argument("-f", "--file", help="Simulate camera sensor from .bag file")
     parser.add_argument("-d", "--depth", help="dont use depth camera (faster)", action='store_false')
+    parser.add_argument("-e", "--edges", help="only visualize the edges of a hand", action='store_true')
     parser.add_argument("-c", "--colorspace",
                         help="choose the colorspace for color segmentation. Popular choice is 'hsv' but we achieved best results with 'lab'",
                         choices=['hsv', 'lab', 'ycrcb', 'rgb', 'luv', 'xyz', 'hls', 'yuv'], default='lab')
