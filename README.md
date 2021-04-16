@@ -71,7 +71,7 @@ python start.py -s
 ### Example: Standalone + reading from file
 The following example is very useful for testing GECCO in your own local computer without access to a Realsense camera. You need to download our [example .bag file](https://uni-muenster.sciebo.de/s/x6W2XDy0J4oUFNe)
 ```
-python start.py -f file.bag
+python start.py -s -f file.bag
 ```
 ## Known Issues
 
