@@ -134,10 +134,16 @@ def getHand(colorframe, uncaliColorframe, colorspace, edges):
             cv2.drawContours(mask, [contour], -1, 255, -1)  # Draw filled contour in mask
             tempOut = np.zeros_like(handmask)  # Extract out the object and place into output image
             tempOut[mask == 255] = handmask[mask == 255]
+            result = [tempOut]
+            # edge only mode
             if edges:
+                # Heavily dilated
                 tempOutDilBig = cv2.dilate(tempOut, cv2.getStructuringElement(cv2.MORPH_RECT, (20, 20)), iterations=1)
+                # A little less dilated
                 tempOutDilSmol = cv2.dilate(tempOut, cv2.getStructuringElement(cv2.MORPH_RECT, (15, 15)), iterations=1)
-            arrayOut.append([tempOut, tempOutDilBig, tempOutDilSmol])
+                result.append(tempOutDilBig)
+                result.append(tempOutDilSmol)
+            arrayOut.append(result)
         return arrayOut
 
     ###################################################
@@ -163,17 +169,28 @@ def getHand(colorframe, uncaliColorframe, colorspace, edges):
 
     colorframes = []
     for curMask in handMasks:
-        temp = colorframe.copy()
+        copy = colorframe.copy()
+        # edge only mode
         if edges:
-            temp = cv2.bitwise_and(temp, temp, mask=curMask[1])
-            canny_output = cv2.Canny(temp, 100, 200)
-            temp = np.zeros((canny_output.shape[0], canny_output.shape[1], 3), dtype=np.uint8)
+            # get a really dilated masked out hand, so that the edges dont have to be calculated for the entire image
+            hand_image = cv2.bitwise_and(copy, copy, mask=curMask[1])
+            # calculate edges
+            canny_output = cv2.Canny(hand_image, 100, 200)
+            # empty image
+            hand_image = np.zeros((canny_output.shape[0], canny_output.shape[1], 3), dtype=np.uint8)
+            # get contours of edges
             contours, hierarchy = cv2.findContours(canny_output, cv2.RETR_TREE, cv2.CHAIN_APPROX_SIMPLE)
+            # draw the contours into the empty image
             for i in range(len(contours)):
                 edge_color = np.mean( np.array([lower_color, upper_color]), axis=0 )
-                cv2.drawContours(temp, contours, i, edge_color, 2, cv2.LINE_8, hierarchy, 0)
-            temp = cv2.bitwise_and(temp, temp, mask=curMask[2])
+                cv2.drawContours(hand_image, contours, i, edge_color, 2, cv2.LINE_8, hierarchy, 0)
+            # mask out the outer edges, that belong to the more heavily dilated mask
+            hand_image = cv2.bitwise_and(hand_image, hand_image, mask=curMask[2])
+            # comment this in, to see edges and hand:
+            # hand_image_norm = cv2.bitwise_and(copy, copy, mask=curMask[0])
+            # hand_image = cv2.bitwise_or(hand_image, hand_image_norm)
+        # normal mode
         else:
-            temp = cv2.bitwise_and(temp, temp, mask=curMask)
-        colorframes.append(temp)
+            hand_image = cv2.bitwise_and(copy, copy, mask=curMask)
+        colorframes.append(hand_image)
     return colorframes, handList, fingerList
