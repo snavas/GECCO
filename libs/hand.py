@@ -135,8 +135,9 @@ def getHand(colorframe, uncaliColorframe, colorspace, edges):
             tempOut = np.zeros_like(handmask)  # Extract out the object and place into output image
             tempOut[mask == 255] = handmask[mask == 255]
             if edges:
-                tempOut = cv2.dilate(tempOut, cv2.getStructuringElement(cv2.MORPH_RECT, (15, 15)), iterations=1)
-            arrayOut.append(tempOut)
+                tempOutDilBig = cv2.dilate(tempOut, cv2.getStructuringElement(cv2.MORPH_RECT, (20, 20)), iterations=1)
+                tempOutDilSmol = cv2.dilate(tempOut, cv2.getStructuringElement(cv2.MORPH_RECT, (15, 15)), iterations=1)
+            arrayOut.append([tempOut, tempOutDilBig, tempOutDilSmol])
         return arrayOut
 
     ###################################################
@@ -164,12 +165,15 @@ def getHand(colorframe, uncaliColorframe, colorspace, edges):
     for curMask in handMasks:
         temp = colorframe.copy()
         if edges:
+            temp = cv2.bitwise_and(temp, temp, mask=curMask[1])
             canny_output = cv2.Canny(temp, 100, 200)
             temp = np.zeros((canny_output.shape[0], canny_output.shape[1], 3), dtype=np.uint8)
             contours, hierarchy = cv2.findContours(canny_output, cv2.RETR_TREE, cv2.CHAIN_APPROX_SIMPLE)
             for i in range(len(contours)):
                 edge_color = np.mean( np.array([lower_color, upper_color]), axis=0 )
                 cv2.drawContours(temp, contours, i, edge_color, 2, cv2.LINE_8, hierarchy, 0)
-        temp = cv2.bitwise_and(temp, temp, mask=curMask)
+            temp = cv2.bitwise_and(temp, temp, mask=curMask[2])
+        else:
+            temp = cv2.bitwise_and(temp, temp, mask=curMask)
         colorframes.append(temp)
     return colorframes, handList, fingerList
