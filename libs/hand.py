@@ -191,6 +191,6 @@ def getHand(colorframe, uncaliColorframe, colorspace, edges):
             # hand_image = cv2.bitwise_or(hand_image, hand_image_norm)
         # normal mode
         else:
-            hand_image = cv2.bitwise_and(copy, copy, mask=curMask)
+            hand_image = cv2.bitwise_and(copy, copy, mask=curMask[0])
         colorframes.append(hand_image)
     return colorframes, handList, fingerList
