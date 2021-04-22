@@ -53,15 +53,16 @@ def getUpperLowerCircle(colorMarkers, colorframe):
     center = calculateCenter(x1, y1, x2, y2)
 
     r = 15
-    rectX = (center[0] - r)
-    rectY = (center[1] - r)
-    roi = colorframe[rectY:(rectY + 2 * r), rectX:(rectX + 2 * r)]
+    mask = np.zeros(colorframe.shape[:2], dtype="uint8")
+    cv2.circle(mask, (center[0], center[1]), r, 255, -1)
+    roi = cv2.bitwise_and(colorframe, colorframe, mask=mask)
     hsvRoi = cv2.cvtColor(roi, cv2.COLOR_BGR2HSV)
 
-    lower = np.array(
-        [hsvRoi[:, :, 0].min(), hsvRoi[:, :, 1].min(), hsvRoi[:, :, 2].min()])
     upper = np.array(
         [hsvRoi[:, :, 0].max(), hsvRoi[:, :, 1].max(), hsvRoi[:, :, 2].max()])
+    hsvRoi[np.where((hsvRoi == [0, 0, 0]).all(axis=2))] = [255, 255, 255]
+    lower = np.array(
+        [hsvRoi[:, :, 0].min(), hsvRoi[:, :, 1].min(), hsvRoi[:, :, 2].min()])
     h = hsvRoi[:, :, 0]
     s = hsvRoi[:, :, 1]
     v = hsvRoi[:, :, 2]

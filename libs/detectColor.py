@@ -72,16 +72,18 @@ def getUpperLowerCircle(colorMarkers, colorframe, colorspace):
     y2 = int(colorMarkers[1][0][1])
     center = calculateCenter(x1, y1, x2, y2)
 
-    r = 15
-    rectX = (center[0] - r)
-    rectY = (center[1] - r)
-    roi = colorframe[rectY:(rectY + 2 * r), rectX:(rectX + 2 * r)]
-    hsvRoi = cv2.cvtColor(roi, colorspace)
+    colorframe = cv2.cvtColor(colorframe, colorspace)
 
-    lower = np.array(
-        [hsvRoi[:, :, 0].min() - 3, hsvRoi[:, :, 1].min() - 3, hsvRoi[:, :, 2].min() - 3])
+    r = 15
+    mask = np.zeros(colorframe.shape[:2], dtype="uint8")
+    cv2.circle(mask, (center[0], center[1]), r, 255, -1)
+    roi = cv2.bitwise_and(colorframe, colorframe, mask=mask)
+
     upper = np.array(
-        [hsvRoi[:, :, 0].max() + 3, hsvRoi[:, :, 1].max() + 3, hsvRoi[:, :, 2].max() + 3])
+        [roi[:, :, 0].max(), roi[:, :, 1].max(), roi[:, :, 2].max()])
+    roi[np.where((roi == [0, 0, 0]).all(axis=2))] = [255, 255, 255]
+    lower = np.array(
+        [roi[:, :, 0].min(), roi[:, :, 1].min(), roi[:, :, 2].min()])
 
     return lower, upper
 
@@ -112,8 +114,8 @@ def detectcolor3D(colorframe, lower_color, upper_color, colorspace):
                                max(upper_colorA[1], upper_colorB[1]),
                                max(upper_colorA[2], upper_colorB[2])])
     elif len(colorMarkersA) == 2:
-        lower_color, upper_color = getUpperLowerSquare(colorMarkersA, colorframe, colorspace)
+        lower_color, upper_color = getUpperLowerCircle(colorMarkersA, colorframe, colorspace)
     elif len(colorMarkersB) == 2:
-        lower_color, upper_color = getUpperLowerSquare(colorMarkersB, colorframe, colorspace)
+        lower_color, upper_color = getUpperLowerCircle(colorMarkersB, colorframe, colorspace)
 
     return lower_color, upper_color
