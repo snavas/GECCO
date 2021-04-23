@@ -51,7 +51,7 @@ cd GECCO
 | -d   | --depth      | -            | -       | Dont use depth image to increase performance                                             |
 | -e   | --edges      | -            | -       | only visualize the edges of a hand                                                       |
 | -c   | --colorspace | ```['hsv', 'lab', 'ycrcb', 'rgb', 'luv', 'xyz', 'hls', 'yuv']``` | ```'lab'``` | Colorspace used  for color segmentation. Popular choice is 'hsv' but we achieved best results with 'lab' |
-| -v   | --verbose    | -            | -       | Enable vidgear logging                                                                   |
+| -v   | --verbose    | -            | -       | Enable vidgear logging and visualize position of fingers and hand center                 |
 
 
 ### Example: Peer Mode

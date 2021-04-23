@@ -102,78 +102,54 @@ def getHand(colorframe, uncaliColorframe, colorspace, edges):
             i += 1
         return fingers
 
-    def getFeatures(contour, max_distance):
-        # TODO: NOT USED
-        ####################################################
-        # Extract Hand Features
-        ####################################################
-        # https://github.com/SouravJohar/handy/blob/master/Hand.py
-        ####################################################
-        #hull = cv2.convexHull(contour)
-        #hull_indices = contour.vertices
-        #contourPoints = hull.poi
-        hull_indices = cv2.convexHull(contour, returnPoints=False)
-        contour_points = cv2.convexHull(contour, returnPoints=True)
-        x = []
-        y = []
-        #for pt in contour_points():
-        for pt in range(len(contour_points)):
-            x.append(contour_points[pt][0][0])
-            y.append(contour_points[pt][0][1])
-        z = np.vstack((x, y))
-        z = np.float32(z)
-        criteria = (cv2.TERM_CRITERIA_EPS + cv2.TERM_CRITERIA_MAX_ITER, 10, 1.0)
-        ret, label, center = cv2.kmeans(z, 2, None, criteria, 10, cv2.KMEANS_PP_CENTERS)
-        return center.transpose()
-        #return contour_points
+    def getcontourmask(handmask):
+        mode = cv2.RETR_EXTERNAL  # cv2.RETR_LIST
+        method = cv2.CHAIN_APPROX_SIMPLE
+        hand_contours = []
+        contours, hierarchy = cv2.findContours(handmask, mode, method)
+        hands = []
+        for c in contours:
+            # If contours are bigger than a certain area we push them to the array
+            if cv2.contourArea(c) > 2500:
+                hand_contours.append(c)
+                mask = np.zeros_like(handmask)  # Create mask where white is what we want, black otherwise
+                cv2.drawContours(mask, [c], -1, 255, -1)  # Draw filled contour in mask
+                tempOut = np.zeros_like(handmask)  # Extract out the object and place into output image
+                tempOut[mask == 255] = handmask[mask == 255]
 
-    def getcontourmask(handmask, handcontours):
-        arrayOut = []
-        for contour in handcontours:
-            mask = np.zeros_like(handmask)  # Create mask where white is what we want, black otherwise
-            cv2.drawContours(mask, [contour], -1, 255, -1)  # Draw filled contour in mask
-            tempOut = np.zeros_like(handmask)  # Extract out the object and place into output image
-            tempOut[mask == 255] = handmask[mask == 255]
-            result = [tempOut]
-            # edge only mode
-            if edges:
-                # Heavily dilated
-                tempOutDilBig = cv2.dilate(tempOut, cv2.getStructuringElement(cv2.MORPH_RECT, (20, 20)), iterations=1)
-                # A little less dilated
-                tempOutDilSmol = cv2.dilate(tempOut, cv2.getStructuringElement(cv2.MORPH_RECT, (15, 15)), iterations=1)
-                result.append(tempOutDilBig)
-                result.append(tempOutDilSmol)
-            arrayOut.append(result)
-        return arrayOut
+                rHull = getRoughHull(c)
+                vertices = getHullVertices(rHull, c)
+                points = filterVerticesByAngle(vertices)
+
+                hand = {
+                    "mask": tempOut,
+                    "contour": c,
+                    "fingers": points
+                }
+                # edge only mode
+                if edges:
+                    hand["dilated_masks"] = []
+                    # Heavily dilated
+                    tempOutDilBig = cv2.dilate(tempOut, cv2.getStructuringElement(cv2.MORPH_RECT, (20, 20)), iterations=1)
+                    hand["dilated_masks"].append(tempOutDilBig)
+                    # A little less dilated
+                    tempOutDilSmol = cv2.dilate(tempOut, cv2.getStructuringElement(cv2.MORPH_RECT, (15, 15)), iterations=1)
+                    hand["dilated_masks"].append(tempOutDilSmol)
+                hands.append(hand)
+        return hands
 
     ###################################################
     # Function body
     ###################################################
 
     handMask = gethandmask(colorframe)  # hand mask
-    handContours = getcontours(handMask)       # hand contours
-    handMasks = getcontourmask(handMask, handContours)
-    handList = []
-    fingerList = []
-    if handContours:
-        for c in handContours:
-            rHull = getRoughHull(c)
-            vertices = getHullVertices(rHull, c)
-            points = filterVerticesByAngle(vertices)
-            handList.append(c)
-            fingerList.append(points)
-
-    else:
-        handList = False
-        fingerList = False
-
-    colorframes = []
-    for curMask in handMasks:
+    hands = getcontourmask(handMask) # divide the big mask into individual hand masks and contours
+    for hand in hands:
         copy = colorframe.copy()
         # edge only mode
         if edges:
             # get a really dilated masked out hand, so that the edges dont have to be calculated for the entire image
-            hand_image = cv2.bitwise_and(copy, copy, mask=curMask[1])
+            hand_image = cv2.bitwise_and(copy, copy, mask=hand["dilated_masks"][0])
             # calculate edges
             canny_output = cv2.Canny(hand_image, 100, 200)
             # empty image
@@ -190,12 +166,12 @@ def getHand(colorframe, uncaliColorframe, colorspace, edges):
             for i in range(len(contours)):
                 cv2.drawContours(hand_image, contours, i, (254, 254, 254), 1, cv2.LINE_8, hierarchy, 0)
             # mask out the outer edges, that belong to the more heavily dilated mask
-            hand_image = cv2.bitwise_and(hand_image, hand_image, mask=curMask[2])
+            hand_image = cv2.bitwise_and(hand_image, hand_image, mask=hand["dilated_masks"][0])
             # comment this in, to see edges and hand:
             # hand_image_norm = cv2.bitwise_and(copy, copy, mask=curMask[0])
             # hand_image = cv2.bitwise_or(hand_image, hand_image_norm)
         # normal mode
         else:
-            hand_image = cv2.bitwise_and(copy, copy, mask=curMask[0])
-        colorframes.append(hand_image)
-    return colorframes, handList, fingerList
+            hand_image = cv2.bitwise_and(copy, copy, mask=hand["mask"])
+        hand["hand_image"] = hand_image
+    return hands
