@@ -64,7 +64,7 @@ async def custom_frame_generator(pattern):
                 break
             # process frame
             ########################
-            # Calibation           #
+            # Calibration           #
             ########################
             global screen_corners, target_corners
             if continuousCalibration == False and len(target_corners) != 4:
@@ -98,10 +98,11 @@ async def custom_frame_generator(pattern):
 
                     # Print and log the fingertips
                     for i, hand in enumerate(hands):
+                        hand_image = hand["hand_image"]
                         # Altering hand colors (to avoid feedback loop
                         # Option 1: Inverting the picture
-                        hand["hand_image"] = cv2.bitwise_not(hand["hand_image"])
-                        hand["hand_image"][np.where((hand["hand_image"] == [255, 255, 255]).all(axis=2))] = [0, 0, 0]
+                        hand_image = cv2.bitwise_not(hand_image)
+                        hand_image[np.where((hand_image == [255, 255, 255]).all(axis=2))] = [0, 0, 0]
                         # Calculate hand centre
                         M = cv2.moments(hand["contour"])
                         cX = int(M["m10"] / M["m00"])
@@ -112,36 +113,36 @@ async def custom_frame_generator(pattern):
                             handToTableDist = (float(tabledistance) - float(caliDepthframe[cY][cX])) / 100
 
                             if handToTableDist > 0 and handToTableDist < 10:
-                                hand["hand_image"] = height.visHeight(hand["hand_image"], handToTableDist)
+                                hand_image = height.visHeight(hand_image, handToTableDist)
 
                             if pattern.logging:
-                                cv2.circle(hand["hand_image"], (cX, cY), 4, utils.id_to_random_color(i), -1)
-                                cv2.putText(hand["hand_image"], "  " + str(handToTableDist), (cX, cY),
+                                cv2.circle(hand_image, (cX, cY), 4, utils.id_to_random_color(i), -1)
+                                cv2.putText(hand_image, "  " + str(handToTableDist), (cX, cY),
                                             cv2.FONT_HERSHEY_SIMPLEX, 0.25, utils.id_to_random_color(i), 1, cv2.LINE_AA)
                             log.write(str(timestamp) + " " + str(float(tabledistance) - float(depthframe[cY][cX])) + " H " + str(cX) + " " + str(cY) + "\n")
 
                             for f in hand["fingers"]:
                                 if pattern.logging:
-                                    cv2.circle(hand["hand_image"], f, 4, utils.id_to_random_color(i), -1)
-                                    cv2.putText(hand["hand_image"], "  " + str((float(tabledistance) - float(caliDepthframe[f[1]][f[0]]))/100), f, cv2.FONT_HERSHEY_SIMPLEX, 0.25, utils.id_to_random_color(i),
+                                    cv2.circle(hand_image, f, 4, utils.id_to_random_color(i), -1)
+                                    cv2.putText(hand_image, "  " + str((float(tabledistance) - float(caliDepthframe[f[1]][f[0]]))/100), f, cv2.FONT_HERSHEY_SIMPLEX, 0.25, utils.id_to_random_color(i),
                                                 1, cv2.LINE_AA)
                                 #print("color pixel value of ", f, ":", frame[f[1]][f[0]]) # <- TODO: reverse coordinates idk why
                                 #print("depth pixel value of ", f, ":", depthframe[f[1]][f[0]])
                                 log.write(str(timestamp) + " " + str(float(tabledistance) - float(depthframe[cY][cX])) + " P " +  str(f[0]) + " " + str(f[1]) + "\n")
                         else:
                             if pattern.logging:
-                                cv2.circle(hand["hand_image"], (cX, cY), 4, utils.id_to_random_color(i), -1)
+                                cv2.circle(hand_image, (cX, cY), 4, utils.id_to_random_color(i), -1)
                             # record depth as "Null"
                             log.write(str(timestamp) + " Null H " + str(cX) + " " + str(
                                 cY) + "\n")
                             for f in hand["fingers"]:
                                 if pattern.logging:
-                                    cv2.circle(hand["hand_image"], f, 4, utils.id_to_random_color(i), -1)
+                                    cv2.circle(hand_image, f, 4, utils.id_to_random_color(i), -1)
                                 # record depth as "Null"
                                 log.write(str(timestamp) + " Null P " + str(f[0]) + " " + str(
                                     f[1]) + "\n")
                         # add the hand to the frame
-                        frame = cv2.bitwise_or(frame, hand["hand_image"])
+                        frame = cv2.bitwise_or(frame, hand_image)
 
             # frame = reducer(frame, percentage=40)  # reduce frame by 40%
             # to measure time to completion
