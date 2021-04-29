@@ -158,15 +158,15 @@ def getHand(colorframe, uncaliColorframe, colorspace, edges):
             # get contours of edges
             contours, hierarchy = cv2.findContours(canny_output, cv2.RETR_TREE, cv2.CHAIN_APPROX_SIMPLE)
             # draw the contours into the empty image
+            edge_color = np.mean(np.array([lower_color, upper_color]), axis=0)
             for i in range(len(contours)):
-                edge_color = np.mean( np.array([lower_color, upper_color]), axis=0 )
                 cv2.drawContours(hand_image, contours, i, (254,254,254), 3, cv2.LINE_8, hierarchy, 0)
 
             hand_image = cv2.bitwise_not(hand_image)
             for i in range(len(contours)):
-                cv2.drawContours(hand_image, contours, i, (254, 254, 254), 1, cv2.LINE_8, hierarchy, 0)
+                cv2.drawContours(hand_image, contours, i, (254,254,254), 1, cv2.LINE_8, hierarchy, 0)
             # mask out the outer edges, that belong to the more heavily dilated mask
-            hand_image = cv2.bitwise_and(hand_image, hand_image, mask=hand["dilated_masks"][0])
+            hand_image = cv2.bitwise_and(hand_image, hand_image, mask=hand["dilated_masks"][1])
             # comment this in, to see edges and hand:
             # hand_image_norm = cv2.bitwise_and(copy, copy, mask=curMask[0])
             # hand_image = cv2.bitwise_or(hand_image, hand_image_norm)
