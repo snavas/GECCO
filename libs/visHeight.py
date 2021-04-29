@@ -20,3 +20,11 @@ def visHeight(frame, handToTableDist):
 
     final_hsv = cv2.merge((h, s, v))
     return cv2.cvtColor(final_hsv, cv2.COLOR_HSV2BGR)
+
+def handAsDepthframe(mask, caliDepthframe,tabledist):
+    caliDepthframe = caliDepthframe.astype('float64')
+    caliDepthframe = caliDepthframe - (tabledist+100)
+    caliDepthframe *= (255.0 / 1200)
+    caliDepthframe = caliDepthframe.astype('uint8')
+    colored = cv2.cvtColor(caliDepthframe, cv2.COLOR_GRAY2RGB)
+    return cv2.bitwise_and(colored, colored, mask=mask)
