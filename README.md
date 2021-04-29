@@ -43,6 +43,7 @@ cd GECCO
 
 | short| long         | value        | default | description                                                                              |
 | ---- | ------------ | ------------ | ------- | ---------------------------------------------------------------------------------------- |
+| -r   | --realsense  | ```string``` | -       | Realsense Device S/N                                                                     |
 | -s   | --standalone | -            | -       | Standalone mode                                                                          |
 | -o   | --host       |  ```int```   | -       | Host port number                                                                         |
 | -a   | --address    | ```string``` | -       | Peer IP address                                                                          |
