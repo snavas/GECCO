@@ -25,7 +25,7 @@ screen_corners = []
 target_corners = []
 continuousCalibration = False
 overlay = True
-DeviceSrc = "752112070204"
+DeviceSrc = "0"
 #fileFlag = True
 
 colorspacedict = {
@@ -211,7 +211,8 @@ async def netgear_async_playback(pattern):
             client.close(skip_loop=True)
 
 def getOptions(args=sys.argv[1:]):
-    parser = argparse.ArgumentParser(description="PyMote")
+    parser = argparse.ArgumentParser(description="GECCO")
+    parser.add_argument("-r", "--realsense", help="Realsense device S/N")
     parser.add_argument("-s", "--standalone", help="Standalone Mode", action='store_true')
     parser.add_argument("-o", "--host", type=int, help="Host port number")
     parser.add_argument("-a", "--address", help="Peer IP address")
@@ -228,6 +229,7 @@ def getOptions(args=sys.argv[1:]):
 
 if __name__ == '__main__':
     options = getOptions(sys.argv[1:])
+    DeviceSrc = options.realsense
     # configure network
     if options.standalone:
         HostPort = 5555

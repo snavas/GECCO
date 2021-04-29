@@ -76,7 +76,7 @@ def getUpperLowerCircle(colorMarkers, colorframe):
     return average, maxSense, colorframe
 
 def main():
-    device = RealSense('752112070204')
+    device = RealSense('752112070399')
     file = False
     #print("Color intrinsics: ", device.getcolorintrinsics())
     #print("Depth intrinsics: ", device.getdepthintrinsics())
