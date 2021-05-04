@@ -1,13 +1,12 @@
 # import library
 from vidgear.gears.asyncio import NetGear_Async
-# from vidgear.gears.helper import reducer
+from vidgear.gears.helper import reducer
 from classes.realsense import RealSense
 from classes.bcolors import bcolors
-# import libs.hand as hand
-# import libs.draw as draw
+import libs.hand as hand_lib
 import libs.calibration as cal
-# import libs.utils as utils
-# import numpy as np
+import libs.utils as utils
+import numpy as np
 import cv2, asyncio
 import argparse
 import sys
@@ -48,7 +47,7 @@ def SegmentHands(pathtest):
                                      transforms.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225])])
     Xtest = preprocess(img)
 
-    checkpoint = torch.load('checkpoints/checkpointhandseg3.pt')
+    checkpoint = torch.load('checkpoints/pytorch/checkpointhandseg3.pt')
     model = HandSegModel()
     model.load_state_dict(checkpoint['state_dict'])
     with torch.no_grad():
@@ -82,15 +81,27 @@ def getcoloredMask(image, mask):
 HostPort = 5555
 PeerAddress = "localhost"
 PeerPort = 5555
-calibrationMatrix = []
+screen_corners = []
+target_corners = []
 oldCalibration = False
 continuousCalibration = False
 overlay = True
 DeviceSrc = "752112070204"
 #fileFlag = True
 
+colorspacedict = {
+    "hsv": cv2.COLOR_BGR2HSV,
+    "lab": cv2.COLOR_BGR2LAB,
+    "ycrcb": cv2.COLOR_BGR2YCrCb,
+    "rgb": cv2.COLOR_BGR2RGB,
+    "luv": cv2.COLOR_BGR2LUV,
+    "xyz": cv2.COLOR_BGR2XYZ,
+    "hls": cv2.COLOR_BGR2HLS,
+    "yuv": cv2.COLOR_BGR2YUV
+}
+
 # Create a async frame generator as custom source
-async def custom_frame_generator():
+async def custom_frame_generator(pattern):
     try:
         # Get global log variable
         global log
@@ -102,107 +113,50 @@ async def custom_frame_generator():
             ########################
             # Startup              #
             ########################
-            # read frames
-            colorframe = device.getcolorstream()
-            #if fileFlag:
-            #    colorframe = cv2.cvtColor(colorframe, cv2.COLOR_RGB2BGR) #Reading from BAG alters the color space and needs to be fixed
-            depthframe = device.getdepthstream()
             # store time in seconds since the epoch (UTC)
             timestamp = time.time()
+            # read frames
+            colorframe = device.getcolorstream()
+            # if fileFlag:
+            #    colorframe = cv2.cvtColor(colorframe, cv2.COLOR_RGB2BGR) #Reading from BAG alters the color space and needs to be fixed
+
             # check if frame empty
             if colorframe is None:
                 break
             # process frame
             ########################
-            # Calibation           #
+            # Calibration           #
             ########################
-            global calibrationMatrix
-            global oldCalibration
-            if continuousCalibration == False and len(calibrationMatrix) != 4:
-                frame, newcalibrationMatrix = cal.calibrateViaARUco(colorframe, depthframe, calibrationMatrix)
-                if calibrationMatrix == newcalibrationMatrix:
-                    oldCalibration = True
-                else:
-                    oldCalibration = False
-                calibrationMatrix = newcalibrationMatrix
+            global screen_corners, target_corners
+            if continuousCalibration == False and len(target_corners) != 4:
+                frame, screen_corners, target_corners = cal.calibrateViaARUco(colorframe, screen_corners,
+                                                                              target_corners)
             else:
-                frame = colorframe
-            if len(calibrationMatrix) == 4:
-                #print(depthframe[int(calibrationMatrix[0][1])][int(calibrationMatrix[0][0])])
-                #print("newtabledistance = ", depthframe[calibrationMatrix[0][1]][calibrationMatrix[0][0]])
-                tabledistance = depthframe[int(calibrationMatrix[0][1])][int(calibrationMatrix[0][0])]
-                # TODO: this solution is too simple, it needs better maths to create a more robust solution
-                # TODO: put all this code into a function?
-                minx = min((calibrationMatrix[0][0], calibrationMatrix[1][0], calibrationMatrix[2][0],
-                            calibrationMatrix[3][0]))
-                miny = min((calibrationMatrix[0][1], calibrationMatrix[1][1], calibrationMatrix[2][1],
-                            calibrationMatrix[3][1]))
-                maxx = max((calibrationMatrix[0][0], calibrationMatrix[1][0], calibrationMatrix[2][0],
-                            calibrationMatrix[3][0]))
-                maxy = max((calibrationMatrix[0][1], calibrationMatrix[1][1], calibrationMatrix[2][1],
-                            calibrationMatrix[3][1]))
-                height = (maxy - miny)
-                width = (maxx - minx)
-                # TODO: Are colorframe and depthframe totally aligned? E.g. same dimmensions¿?
-                # print(len(colorframe), " ", len(depthframe)) #TODO: Same dimmensions, hopefully aligned
-                colorframe = colorframe[int(miny):int(miny + height), int(minx):int(minx + width)]
-                colorframe = cv2.resize(colorframe,(1280, 720), 30, 30) #TODO: Necessary? Might affect network performance
-                depthframe = depthframe[int(miny):int(miny + height), int(minx):int(minx + width)]
-                depthframe = cv2.resize(depthframe,(1280, 720), 30, 30) #TODO: Necessary? Might affect network performance
-                #print(calibrationMatrix)
+                # print(depthframe[int(calibrationMatrix[0][1])][int(calibrationMatrix[0][0])])
+                # print("newtabledistance = ", depthframe[calibrationMatrix[0][1]][calibrationMatrix[0][0]])
+
+                M = cv2.getPerspectiveTransform(target_corners, screen_corners)
+                # TODO: derive resolution from width and height of original frame?
+                caliColorframe = cv2.warpPerspective(colorframe, M, (1280, 720))
 
                 ########################
                 # Hand Detection       #
                 ########################
-                # result, hands, points = hand.getHand(colorframe, depthframe, device.getdepthscale())
-                # #drawings = draw.getDraw(colorframe)
-                # #frame = cv2.bitwise_or(result, drawings)
-                # frame = result
-                # # Altering hand colors (to avoid feedback loop
-                # # Option 1: Inverting the picture
-                # frame = cv2.bitwise_not(frame)
-                # frame[np.where((frame == [255, 255, 255]).all(axis=2))] = [0, 0, 0]
-                #
-                # #if (oldCalibration):
-                # #    cv2.putText(frame, "CALIBRATED (OLD)", (25, 25), cv2.FONT_HERSHEY_SIMPLEX, 0.25,
-                # #                (0, 255, 255), 1, cv2.LINE_AA)
-                # #    cv2.putText(frame, "DISTANCE TO TABLE: "+str(tabledistance), (25, 35), cv2.FONT_HERSHEY_SIMPLEX, 0.25,
-                # #                (0, 255, 255), 1, cv2.LINE_AA)
-                # #else:
-                # #    cv2.putText(frame, "CALIBRATED (4)", (25, 25), cv2.FONT_HERSHEY_SIMPLEX, 0.25, (0, 255, 0),
-                # #                1, cv2.LINE_AA)
-                # #    cv2.putText(frame, "DISTANCE TO TABLE: "+str(tabledistance), (25, 35), cv2.FONT_HERSHEY_SIMPLEX, 0.25, (0, 255, 0),
-                # #                1, cv2.LINE_AA)
-                #
-                # if hands:
-                # # Print and log the fingertips
-                #     for i in range(len(hands)):
-                #         # Calculate hand centre
-                #         M = cv2.moments(hands[i])
-                #         cX = int(M["m10"] / M["m00"])
-                #         cY = int(M["m01"] / M["m00"])
-                #         cv2.circle(frame, (cX, cY), 4, utils.id_to_random_color(i), -1)
-                #         cv2.putText(frame, "  " + str((tabledistance - depthframe[cY][cX]) / 100), (cX, cY),
-                #                     cv2.FONT_HERSHEY_SIMPLEX, 0.25, utils.id_to_random_color(i), 1, cv2.LINE_AA)
-                #         string = "T " + str(timestamp) + " DH " + str(tabledistance - depthframe[cY][cX])
-                #         for f in points[i]:
-                #             cv2.circle(frame, f, 4, utils.id_to_random_color(i), -1)
-                #             cv2.putText(frame, "  " + str((tabledistance - depthframe[f[1]][f[0]])/100), f, cv2.FONT_HERSHEY_SIMPLEX, 0.25, utils.id_to_random_color(i),
-                #                             1, cv2.LINE_AA)
-                #             #print("color pixel value of ", f, ":", frame[f[1]][f[0]]) # <- TODO: reverse coordinates idk why
-                #             #print("depth pixel value of ", f, ":", depthframe[f[1]][f[0]])
-                #             string += " P " + str(f)
-                #         log.write(string+"\n")
-                # else:
-                #     pass
-                #     #print("Unable to calibrate")
-                #     #frame = colorframe
-                #     #cv2.putText(frame, "CALIBRATED (4)", (25, 25), cv2.FONT_HERSHEY_SIMPLEX, 0.25, (0, 0, 255), 1, cv2.LINE_AA)
-                #     #cv2.putText(frame, "NOT CALIBRATED", (25, 25), cv2.FONT_HERSHEY_SIMPLEX, 0.25, (0, 0, 255), 1, cv2.LINE_AA)
+                frame = np.zeros(colorframe.shape, dtype='uint8')
+                colorspace = colorspacedict[pattern.colorspace]
+                hands = hand_lib.getHand(caliColorframe, colorframe, colorspace, pattern.edges)
+                if len(hands) > 0:
 
-            pytorchMask = SegmentHands(colorframe)
-            frame = getcoloredMask(colorframe, pytorchMask)
+                    # Print and log the fingertips
+                    for i, hand in enumerate(hands):
+                        hand_image = hand["hand_image"]
+                        # add the hand to the frame
+                        frame = cv2.bitwise_or(frame, hand_image)
+
+                    pytorchMask = SegmentHands(hands[0]["hand_crop"][0])
+                    frame = pytorchMask#getcoloredMask(hands[0]["hand_crop"][0], pytorchMask)
             # yield frame
+            print(time.time() - timestamp)
             yield frame
             # sleep for sometime
             await asyncio.sleep(0.00001)
@@ -249,7 +203,7 @@ async def netgear_async_playback(pattern):
         server = NetGear_Async(
             address = PeerAddress, port = PeerPort, pattern=1, **options
         )
-        server.config["generator"] = custom_frame_generator()
+        server.config["generator"] = custom_frame_generator(pattern)
         server.launch()
         # gather and run tasks
         input_coroutines = [server.task, client_iterator(client)]
@@ -262,13 +216,19 @@ async def netgear_async_playback(pattern):
         client.close(skip_loop=True)
 
 def getOptions(args=sys.argv[1:]):
-    parser = argparse.ArgumentParser(description="PyMote")
+    parser = argparse.ArgumentParser(description="GECCO")
+    parser.add_argument("-r", "--realsense", help="Realsense device S/N")
     parser.add_argument("-s", "--standalone", help="Standalone Mode", action='store_true')
     parser.add_argument("-o", "--host", type=int, help="Host port number")
     parser.add_argument("-a", "--address", help="Peer IP address")
     parser.add_argument("-p", "--port", type=int, help="Peer port number")
     parser.add_argument("-f", "--file", help="Simulate camera sensor from .bag file")
-    #parser.add_argument("-v", "--verbose",dest='verbose',action='store_true', help="Verbose mode.")
+    parser.add_argument("-d", "--depth", help="dont use depth camera (faster)", action='store_false')
+    parser.add_argument("-e", "--edges", help="only visualize the edges of a hand", action='store_true')
+    parser.add_argument("-c", "--colorspace",
+                        help="choose the colorspace for color segmentation. Popular choice is 'hsv' but we achieved best results with 'lab'",
+                        choices=['hsv', 'lab', 'ycrcb', 'rgb', 'luv', 'xyz', 'hls', 'yuv'], default='lab')
+    parser.add_argument("-v", "--verbose", dest='logging', action='store_true', help="enable vidgear logging")
     options = parser.parse_args(args)
     return options
 
