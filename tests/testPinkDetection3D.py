@@ -76,7 +76,7 @@ def getUpperLowerCircle(colorMarkers, colorframe):
     return average, maxSense, colorframe
 
 def main():
-    device = RealSense('752112070399')
+    device = RealSense('752112070204')
     file = False
     #print("Color intrinsics: ", device.getcolorintrinsics())
     #print("Depth intrinsics: ", device.getdepthintrinsics())
@@ -91,6 +91,7 @@ def main():
             gray = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
             aruco_dict = aruco.Dictionary_get(aruco.DICT_4X4_250)
             parameters = aruco.DetectorParameters_create()
+            parameters.errorCorrectionRate = 0.7
             corners, ids, rejectedImgPoints = aruco.detectMarkers(gray, aruco_dict, parameters=parameters)
             colorframe = aruco.drawDetectedMarkers(image.copy(), corners, ids)
 

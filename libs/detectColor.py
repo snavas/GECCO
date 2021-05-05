@@ -3,6 +3,11 @@ from cv2 import aruco
 import numpy as np
 import math
 from classes.realsense import RealSense
+
+aruco_dict = aruco.Dictionary_get(aruco.DICT_4X4_250)
+parameters = aruco.DetectorParameters_create()
+parameters.errorCorrectionRate = 0.7
+
 def calculateCenter(x1,y1,x2,y2):
     center = [-1,-1]
     center[0] = int((x2 - x1)/2 + x1)
@@ -89,8 +94,6 @@ def getUpperLowerCircle(colorMarkers, colorframe, colorspace):
 
 def detectcolor3D(colorframe, lower_color, upper_color, colorspace):
     grey = cv2.cvtColor(colorframe, cv2.COLOR_RGB2GRAY)
-    aruco_dict = aruco.Dictionary_get(aruco.DICT_4X4_250)
-    parameters = aruco.DetectorParameters_create()
     corners, ids, rejectedImgPoints = aruco.detectMarkers(grey, aruco_dict, parameters=parameters)
 
     colorMarkersA = []
