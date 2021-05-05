@@ -153,7 +153,7 @@ async def custom_frame_generator(pattern):
                         # add the hand to the frame
                         frame = cv2.bitwise_or(frame, hand_image)
 
-                    pytorchMask = SegmentHands(hands[0]["hand_crop"][0])
+                    pytorchMask = SegmentHands(hands[0]["hand_crop"][0]["crop"])
                     frame = pytorchMask#getcoloredMask(hands[0]["hand_crop"][0], pytorchMask)
             # yield frame
             print(time.time() - timestamp)

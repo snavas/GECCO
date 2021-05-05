@@ -182,7 +182,13 @@ def getHand(colorframe, uncaliColorframe, colorspace, edges):
                 x, y, w, h = cv2.boundingRect(ci)
                 crop_img = copy[y:y + h, x:x + w]
                 crop_img = reducer(crop_img, percentage=40)  # reduce frame by 40%
-                hand["hand_crop"].append(crop_img)
+                hand["hand_crop"].append({
+                    "crop": crop_img,
+                    "x": x,
+                    "y": y,
+                    "w": w,
+                    "h": h
+                })
             hand_image = cv2.bitwise_and(copy, copy, mask=hand["mask"])
         hand["hand_image"] = hand_image
     return hands
