@@ -101,8 +101,9 @@ async def custom_frame_generator(pattern):
                         hand_image = hand["hand_image"]
                         # Altering hand colors (to avoid feedback loop
                         # Option 1: Inverting the picture
-                        hand_image = cv2.bitwise_not(hand_image,hand["mask"])
-                        hand_image = cv2.bitwise_and(hand_image, hand_image, mask=hand["mask"])
+                        if pattern.edges != True:
+                            hand_image = cv2.bitwise_not(hand_image, hand["mask"])
+                            hand_image = cv2.bitwise_and(hand_image, hand_image, mask=hand["mask"])
                         # Calculate hand centre
                         M = cv2.moments(hand["contour"])
                         cX = int(M["m10"] / M["m00"])
