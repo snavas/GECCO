@@ -86,14 +86,18 @@ def getUpperLowerCircle(colorMarkers, colorframe, colorspace):
 
     upper = np.array(
         [roi[:, :, 0].max(), roi[:, :, 1].max(), roi[:, :, 2].max()])
-    roi[np.where((roi == [0, 0, 0]).all(axis=2))] = [255, 255, 255]
+    first = roi[:, :, 0]
+    second = roi[:, :, 1]
+    third = roi[:, :, 2]
+    # TODO: Performance-killer! This line takes 0.015 seconds. It is executed 0 to 2 times per frame
     lower = np.array(
-        [roi[:, :, 0].min(), roi[:, :, 1].min(), roi[:, :, 2].min()])
-
+        [np.min(first[np.nonzero(first)]), np.min(second[np.nonzero(second)]),
+         np.min(third[np.nonzero(third)])])
     return lower, upper
 
 def detectcolor3D(colorframe, lower_color, upper_color, colorspace):
     grey = cv2.cvtColor(colorframe, cv2.COLOR_RGB2GRAY)
+    # TODO: Performance-killer! This line takes 0.01 seconds to execute
     corners, ids, rejectedImgPoints = aruco.detectMarkers(grey, aruco_dict, parameters=parameters)
 
     colorMarkersA = []

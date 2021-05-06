@@ -101,8 +101,8 @@ async def custom_frame_generator(pattern):
                         hand_image = hand["hand_image"]
                         # Altering hand colors (to avoid feedback loop
                         # Option 1: Inverting the picture
-                        hand_image = cv2.bitwise_not(hand_image)
-                        hand_image[np.where((hand_image == [255, 255, 255]).all(axis=2))] = [0, 0, 0]
+                        hand_image = cv2.bitwise_not(hand_image,hand["mask"])
+                        hand_image = cv2.bitwise_and(hand_image, hand_image, mask=hand["mask"])
                         # Calculate hand centre
                         M = cv2.moments(hand["contour"])
                         cX = int(M["m10"] / M["m00"])
@@ -146,7 +146,7 @@ async def custom_frame_generator(pattern):
 
             # frame = reducer(frame, percentage=40)  # reduce frame by 40%
             # to measure time to completion
-            print(time.time() - timestamp)
+            # print(time.time() - timestamp)
             yield frame
             # sleep for sometime
             await asyncio.sleep(0.00001)
