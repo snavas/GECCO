@@ -117,7 +117,7 @@ def getHand(colorframe, uncaliColorframe, colorspace, edges):
                 cv2.drawContours(mask, [c], -1, 255, -1)  # Draw filled contour in mask
                 tempOut = np.zeros_like(handmask)  # Extract out the object and place into output image
                 tempOut[mask == 255] = handmask[mask == 255]
-                tempOut = cv2.dilate(tempOut, cv2.getStructuringElement(cv2.MORPH_RECT, (10, 10)), iterations=3)
+                tempOut = cv2.dilate(tempOut, cv2.getStructuringElement(cv2.MORPH_RECT, (10, 15)), iterations=3)
 
                 rHull = getRoughHull(c)
                 vertices = getHullVertices(rHull, c)
