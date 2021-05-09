@@ -47,8 +47,7 @@ async def custom_frame_generator(pattern):
         log = open("logs/log_" + str(int(time.time())) + ".log", "x")
         log.write("timestamp height class x y" + "\n")
         # initialize corners
-        screen_corners = []
-        target_corners = []
+        transform_mat = np. array([])
         # define pink range
         lower_color = np.array([110, 80, 80])
         upper_color = np.array([170, 255, 255])
@@ -73,17 +72,19 @@ async def custom_frame_generator(pattern):
             ########################
             # Calibration           #
             ########################
-            if continuousCalibration == False and len(target_corners) != 4:
-                frame, screen_corners, target_corners = cal.calibrateViaARUco(colorframe, screen_corners, target_corners)
-                if len(target_corners) == 4 and pattern.depth:
-                    depthframe = device.getdepthstream()
-                    tabledistance = depthframe[int(target_corners[1][1])][int(target_corners[1][0])]
-                    if tabledistance == 0:
-                        tabledistance = 1200
+            if continuousCalibration == False and transform_mat.size == 0:
+                frame, screen_corners, target_corners = cal.calibrateViaARUco(colorframe)
+                if len(target_corners) == 4:
+                    transform_mat = cv2.getPerspectiveTransform(target_corners, screen_corners)
+                    if pattern.depth:
+                        depthframe = device.getdepthstream()
+                        tabledistance = depthframe[int(target_corners[1][1])][int(target_corners[1][0])]
+                        if tabledistance == 0:
+                            tabledistance = 1200
+
             else:
-                M = cv2.getPerspectiveTransform(target_corners,screen_corners)
                 # TODO: derive resolution from width and height of original frame?
-                caliColorframe = cv2.warpPerspective(colorframe, M, (1280, 720))
+                caliColorframe = cv2.warpPerspective(colorframe, transform_mat, (1280, 720))
 
                 ########################
                 # Hand Detection       #
