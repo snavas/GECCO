@@ -125,7 +125,7 @@ async def custom_frame_generator(pattern):
                                 cv2.circle(hand_image, (cX, cY), 4, utils.id_to_random_color(i), -1)
                                 cv2.putText(hand_image, "  " + str(handToTableDist), (cX, cY),
                                             cv2.FONT_HERSHEY_SIMPLEX, 0.25, utils.id_to_random_color(i), 1, cv2.LINE_AA)
-                            log.write(str(timestamp) + " " + str(float(tabledistance) - float(depthframe[cY][cX])) + " H " + str(cX) + " " + str(cY) + "\n")
+                            log.write(''.join([str(timestamp), " ", str(float(tabledistance) - float(depthframe[cY][cX])), " H ", str(cX), " ", str(cY), "\n"]))
 
                             for f in hand["fingers"]:
                                 if pattern.logging:
@@ -134,7 +134,7 @@ async def custom_frame_generator(pattern):
                                                 1, cv2.LINE_AA)
                                 #print("color pixel value of ", f, ":", frame[f[1]][f[0]]) # <- TODO: reverse coordinates idk why
                                 #print("depth pixel value of ", f, ":", depthframe[f[1]][f[0]])
-                                log.write(str(timestamp) + " " + str(float(tabledistance) - float(depthframe[cY][cX])) + " P " +  str(f[0]) + " " + str(f[1]) + "\n")
+                                log.write(''.join([str(timestamp), " ", str(float(tabledistance) - float(depthframe[cY][cX])), " P ",  str(f[0]), " ", str(f[1]), "\n"]))
                         else:
                             if pattern.logging:
                                 cv2.circle(hand_image, (cX, cY), 4, utils.id_to_random_color(i), -1)
@@ -145,8 +145,8 @@ async def custom_frame_generator(pattern):
                                 if pattern.logging:
                                     cv2.circle(hand_image, f, 4, utils.id_to_random_color(i), -1)
                                 # record depth as "Null"
-                                log.write(str(timestamp) + " Null P " + str(f[0]) + " " + str(
-                                    f[1]) + "\n")
+                                log.write(''.join([str(timestamp), " Null P ", str(f[0]), " ", str(
+                                    f[1]), "\n"]))
                         # add the hand to the frame
                         frame = cv2.bitwise_or(frame, hand_image)
 
