@@ -2,6 +2,7 @@ import cv2
 import numpy as np
 import copy
 import libs.detectColor as color
+import time
 
 # Source: https://medium.com/@muehler.v/simple-hand-gesture-recognition-using-opencv-and-javascript-eb3d6ced28a0
 
@@ -18,25 +19,20 @@ def angle(vector1, vector2):
     length2 = math.sqrt(vector2[0] * vector2[0] + vector2[1] * vector2[1])
     return math.acos((vector1[0] * vector2[0] + vector1[1] * vector2[1])/ (length1 * length2))
 
-def getHand(colorframe, uncaliColorframe, colorspace, edges):
-    def gethandmask(img):
-        # Convert BGR to HSV
+def getHand(colorframe, uncaliColorframe, colorspace, edges, lower_color, upper_color):
+    def gethandmask(img, lower_color, upper_color):
+        # Convert BGR to given colorspace
         colorConverted = cv2.cvtColor(img, colorspace)
-        global lower_color, upper_color
         lower_color,upper_color = color.detectcolor3D(uncaliColorframe, lower_color, upper_color, colorspace)
-        # Threshold the HSV image to get only color colors
+        # Threshold the image
         mask = cv2.inRange(colorConverted, lower_color, upper_color)
-        # Bitwise-AND mask and original image
-        # res = cv2.bitwise_and(colorframe, colorframe, mask=mask)
-        # remove noise
-        # imgray = cv2.cvtColor(res, cv2.COLOR_BGR2GRAY)
         # https://opencv-python-tutroals.readthedocs.io/en/latest/py_tutorials/py_imgproc/py_filtering/py_filtering.html
         blurred = cv2.blur(mask, (5, 5))  # TODO: VERY BASIC, TRY OTHER FILTERS
         # https://opencv-python-tutroals.readthedocs.io/en/latest/py_tutorials/py_imgproc/py_thresholding/py_thresholding.html
         # ret, thresholded = cv2.threshold(blurred, 50, 255, 0)  # TODO: VERY BASIC, TRY OTHER THRESHHOLDS
         ret, thresholded = cv2.threshold(blurred, 200, 255, cv2.THRESH_BINARY)
         # th3 = cv2.adaptiveThreshold(blurred, 255, cv2.ADAPTIVE_THRESH_GAUSSIAN_C, cv2.THRESH_BINARY, 11, 2)
-        return thresholded
+        return thresholded, lower_color, upper_color
 
     def getcontours(tresh):
         mode = cv2.RETR_EXTERNAL  # cv2.RETR_LIST
@@ -130,10 +126,10 @@ def getHand(colorframe, uncaliColorframe, colorspace, edges):
                 if edges:
                     hand["dilated_masks"] = []
                     # Heavily dilated
-                    tempOutDilBig = cv2.dilate(tempOut, cv2.getStructuringElement(cv2.MORPH_RECT, (20, 20)), iterations=1)
+                    tempOutDilBig = cv2.dilate(tempOut, cv2.getStructuringElement(cv2.MORPH_RECT, (20, 25)), iterations=1)
                     hand["dilated_masks"].append(tempOutDilBig)
                     # A little less dilated
-                    tempOutDilSmol = cv2.dilate(tempOut, cv2.getStructuringElement(cv2.MORPH_RECT, (15, 15)), iterations=1)
+                    tempOutDilSmol = cv2.dilate(tempOut, cv2.getStructuringElement(cv2.MORPH_RECT, (15, 20)), iterations=1)
                     hand["dilated_masks"].append(tempOutDilSmol)
                 hands.append(hand)
         return hands
@@ -141,8 +137,7 @@ def getHand(colorframe, uncaliColorframe, colorspace, edges):
     ###################################################
     # Function body
     ###################################################
-
-    handMask = gethandmask(colorframe)  # hand mask
+    handMask, lower_color, upper_color = gethandmask(colorframe, lower_color, upper_color)  # hand mask
     hands = getcontourmask(handMask) # divide the big mask into individual hand masks and contours
     for hand in hands:
         copy = colorframe.copy()
@@ -159,10 +154,10 @@ def getHand(colorframe, uncaliColorframe, colorspace, edges):
             contours, hierarchy = cv2.findContours(canny_output, cv2.RETR_TREE, cv2.CHAIN_APPROX_SIMPLE)
             # draw the contours into the empty image
             for i in range(len(contours)):
-                cv2.drawContours(hand_image, contours, i, (1,1,1), 3, cv2.LINE_8, hierarchy, 0)
+                cv2.drawContours(hand_image, contours, i, (254,254,254), 3, cv2.LINE_8, hierarchy, 0)
 
             for i in range(len(contours)):
-                cv2.drawContours(hand_image, contours, i, (254,254,254), 1, cv2.LINE_8, hierarchy, 0)
+                cv2.drawContours(hand_image, contours, i, (1,1,1), 1, cv2.LINE_8, hierarchy, 0)
             # mask out the outer edges, that belong to the more heavily dilated mask
             hand_image = cv2.bitwise_and(hand_image, hand_image, mask=hand["dilated_masks"][1])
             # comment this in, to see edges and hand:
@@ -172,4 +167,4 @@ def getHand(colorframe, uncaliColorframe, colorspace, edges):
         else:
             hand_image = cv2.bitwise_and(copy, copy, mask=hand["mask"])
         hand["hand_image"] = hand_image
-    return hands
+    return hands, lower_color, upper_color

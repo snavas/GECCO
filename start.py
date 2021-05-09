@@ -21,8 +21,6 @@ import traceback
 HostPort = 5555
 PeerAddress = "localhost"
 PeerPort = 5555
-screen_corners = []
-target_corners = []
 continuousCalibration = False
 overlay = True
 DeviceSrc = "0"
@@ -42,13 +40,22 @@ colorspacedict = {
 # Create a async frame generator as custom source
 async def custom_frame_generator(pattern):
     try:
-        # Get global log variable
-        global log
         tabledistance = 1200 # Default distance to table
         # Open video stream
         device = RealSense(DeviceSrc)
+        # open log file and write header
+        log = open("logs/log_" + str(int(time.time())) + ".log", "x")
+        log.write("timestamp height class x y" + "\n")
+        # initialize corners
+        screen_corners = []
+        target_corners = []
+        # define pink range
+        lower_color = np.array([110, 80, 80])
+        upper_color = np.array([170, 255, 255])
+
         # loop over stream until its terminated
         while True:
+            #print("start")
             ########################
             # Startup              #
             ########################
@@ -66,7 +73,6 @@ async def custom_frame_generator(pattern):
             ########################
             # Calibration           #
             ########################
-            global screen_corners, target_corners
             if continuousCalibration == False and len(target_corners) != 4:
                 frame, screen_corners, target_corners = cal.calibrateViaARUco(colorframe, screen_corners, target_corners)
                 if len(target_corners) == 4 and pattern.depth:
@@ -75,9 +81,6 @@ async def custom_frame_generator(pattern):
                     if tabledistance == 0:
                         tabledistance = 1200
             else:
-                #print(depthframe[int(calibrationMatrix[0][1])][int(calibrationMatrix[0][0])])
-                #print("newtabledistance = ", depthframe[calibrationMatrix[0][1]][calibrationMatrix[0][0]])
-
                 M = cv2.getPerspectiveTransform(target_corners,screen_corners)
                 # TODO: derive resolution from width and height of original frame?
                 caliColorframe = cv2.warpPerspective(colorframe, M, (1280, 720))
@@ -87,7 +90,8 @@ async def custom_frame_generator(pattern):
                 ########################
                 frame = np.zeros(colorframe.shape, dtype='uint8')
                 colorspace = colorspacedict[pattern.colorspace]
-                hands = hand_lib.getHand(caliColorframe, colorframe, colorspace, pattern.edges)
+                hands, lower_color, upper_color = hand_lib.getHand(caliColorframe, colorframe, colorspace, pattern.edges,
+                                                                   lower_color, upper_color)
 
                 # if hands were detected visualize them
                 if len(hands) > 0:
@@ -248,6 +252,4 @@ if __name__ == '__main__':
     if options.file:
         DeviceSrc = options.file
 
-    log = open("logs/log_"+str(int(time.time()))+".log", "x")
-    log.write("timestamp height class x y" + "\n")
     asyncio.run(netgear_async_playback(options))
