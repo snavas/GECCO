@@ -99,7 +99,7 @@ async def custom_frame_generator(pattern):
                     # if the depth is enabled read out the depth frame
                     if pattern.depth:
                         depthframe = device.getdepthstream()
-                        caliDepthframe = cv2.warpPerspective(depthframe, M, (1280, 720))
+                        caliDepthframe = cv2.warpPerspective(depthframe, transform_mat, (1280, 720))
 
                     # Print and log the fingertips
                     for i, hand in enumerate(hands):
