@@ -1,8 +1,6 @@
 import cv2
 from cv2 import aruco
 import numpy as np
-import math
-from classes.realsense import RealSense
 
 aruco_dict = aruco.Dictionary_get(aruco.DICT_4X4_250)
 parameters = aruco.DetectorParameters_create()
@@ -89,10 +87,9 @@ def getUpperLowerCircle(colorMarkers, colorframe, colorspace):
     first = roi[:, :, 0]
     second = roi[:, :, 1]
     third = roi[:, :, 2]
-    # TODO: Performance-killer! This line takes 0.015 seconds. It is executed 0 to 2 times per frame
     lower = np.array(
-        [np.min(first[np.nonzero(first)]), np.min(second[np.nonzero(second)]),
-         np.min(third[np.nonzero(third)])])
+        [np.min(first[first!=0]), np.min(second[second!=0]),
+         np.min(third[third!=0])])
     return lower, upper
 
 def detectcolor3D(colorframe, lower_color, upper_color, colorspace):

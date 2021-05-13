@@ -48,9 +48,11 @@ async def custom_frame_generator(pattern):
         log.write("timestamp height class x y" + "\n")
         # initialize corners
         transform_mat = np. array([])
-        # define pink range
+        # define initial pink range
         lower_color = np.array([110, 80, 80])
         upper_color = np.array([170, 255, 255])
+        # translate colorspace to opencv code
+        colorspace = colorspacedict[pattern.colorspace]
 
         # loop over stream until its terminated
         while True:
@@ -90,7 +92,6 @@ async def custom_frame_generator(pattern):
                 # Hand Detection       #
                 ########################
                 frame = np.zeros(colorframe.shape, dtype='uint8')
-                colorspace = colorspacedict[pattern.colorspace]
                 hands, lower_color, upper_color = hand_lib.getHand(caliColorframe, colorframe, colorspace, pattern.edges,
                                                                    lower_color, upper_color)
 

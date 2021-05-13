@@ -1,8 +1,6 @@
 import cv2
 import numpy as np
-import copy
 import libs.detectColor as color
-import time
 
 # Source: https://medium.com/@muehler.v/simple-hand-gesture-recognition-using-opencv-and-javascript-eb3d6ced28a0
 
