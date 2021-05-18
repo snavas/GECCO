@@ -31,18 +31,36 @@ calibrationMatrix = []
 oldCalibration = False
 continuousCalibration = False
 overlay = True
-DeviceSrc = "752112070204"
+DeviceSrc = "material/qr_skin_black.bag"
 #fileFlag = True
 
+colorspacedict = {
+    "hsv": cv2.COLOR_BGR2HSV,
+    "lab": cv2.COLOR_BGR2LAB,
+    "ycrcb": cv2.COLOR_BGR2YCrCb,
+    "rgb": cv2.COLOR_BGR2RGB,
+    "luv": cv2.COLOR_BGR2LUV,
+    "xyz": cv2.COLOR_BGR2XYZ,
+    "hls": cv2.COLOR_BGR2HLS,
+    "yuv": cv2.COLOR_BGR2YUV
+}
+
 # Create a async frame generator as custom source
-async def custom_frame_generator():
+async def custom_frame_generator(pattern):
     try:
-        # Get global log variable
-        global log
-        tabledistance = 1200 # Default distance to table
+        tabledistance = 1200  # Default distance to table
         # Open video stream
         device = RealSense(DeviceSrc)
-        # loop over stream until its terminated
+        # open log file and write header
+        log = open("logs/log_" + str(int(time.time())) + ".log", "x")
+        log.write("timestamp height class x y" + "\n")
+        # initialize corners
+        transform_mat = np.array([])
+        # define initial pink range
+        lower_color = np.array([110, 80, 80])
+        upper_color = np.array([170, 255, 255])
+        # translate colorspace to opencv code
+        colorspace = colorspacedict[pattern.colorspace]
         while True:
             ########################
             # Startup              #
@@ -50,8 +68,7 @@ async def custom_frame_generator():
             # read frames
             colorframe = device.getcolorstream()
             #if fileFlag:
-            #    colorframe = cv2.cvtColor(colorframe, cv2.COLOR_RGB2BGR) #Reading from BAG alters the color space and needs to be fixed
-            depthframe = device.getdepthstream()
+            colorframe = cv2.cvtColor(colorframe, cv2.COLOR_RGB2BGR) #Reading from BAG alters the color space and needs to be fixed
             # store time in seconds since the epoch (UTC)
             timestamp = time.time()
             # check if frame empty
@@ -61,98 +78,71 @@ async def custom_frame_generator():
             ########################
             # Calibation           #
             ########################
-            global calibrationMatrix
-            global oldCalibration
-            if continuousCalibration == False and len(calibrationMatrix) != 4:
-                frame, newcalibrationMatrix = cal.calibrateViaARUco(colorframe, depthframe, calibrationMatrix)
-                if calibrationMatrix == newcalibrationMatrix:
-                    oldCalibration = True
-                else:
-                    oldCalibration = False
-                calibrationMatrix = newcalibrationMatrix
+            if False:
+                frame, screen_corners, target_corners = cal.calibrateViaARUco(colorframe)
+                if len(target_corners) == 4:
+                    transform_mat = cv2.getPerspectiveTransform(target_corners, screen_corners)
             else:
-                frame = colorframe
-            if len(calibrationMatrix) == 4:
-                #print(depthframe[int(calibrationMatrix[0][1])][int(calibrationMatrix[0][0])])
-                #print("newtabledistance = ", depthframe[calibrationMatrix[0][1]][calibrationMatrix[0][0]])
-                tabledistance = depthframe[int(calibrationMatrix[0][1])][int(calibrationMatrix[0][0])]
-                # TODO: this solution is too simple, it needs better maths to create a more robust solution
-                # TODO: put all this code into a function?
-                minx = min((calibrationMatrix[0][0], calibrationMatrix[1][0], calibrationMatrix[2][0],
-                            calibrationMatrix[3][0]))
-                miny = min((calibrationMatrix[0][1], calibrationMatrix[1][1], calibrationMatrix[2][1],
-                            calibrationMatrix[3][1]))
-                maxx = max((calibrationMatrix[0][0], calibrationMatrix[1][0], calibrationMatrix[2][0],
-                            calibrationMatrix[3][0]))
-                maxy = max((calibrationMatrix[0][1], calibrationMatrix[1][1], calibrationMatrix[2][1],
-                            calibrationMatrix[3][1]))
-                height = (maxy - miny)
-                width = (maxx - minx)
-                # TODO: Are colorframe and depthframe totally aligned? E.g. same dimmensions¿?
-                # print(len(colorframe), " ", len(depthframe)) #TODO: Same dimmensions, hopefully aligned
-                colorframe = colorframe[int(miny):int(miny + height), int(minx):int(minx + width)]
-                colorframe = cv2.resize(colorframe,(1280, 720)) #TODO: Necessary? Might affect network performance
-                depthframe = depthframe[int(miny):int(miny + height), int(minx):int(minx + width)]
-                depthframe = cv2.resize(depthframe,(1280, 720)) #TODO: Necessary? Might affect network performance
+                caliColorframe = colorframe#cv2.warpPerspective(colorframe, transform_mat, (1280, 720))
                 #print(calibrationMatrix)
 
-                resultsMP = handsMP.process(colorframe)
+                resultsMP = handsMP.process(caliColorframe)
 
-                ########################
-                # Hand Detection       #
-                ########################
-                result, hands, points = hand.getHand(colorframe, depthframe, device.getdepthscale())
-                #drawings = draw.getDraw(colorframe)
-                #frame = cv2.bitwise_or(result, drawings)
-                frame = result
-                # Altering hand colors (to avoid feedback loop
-                # Option 1: Inverting the picture
-                frame = cv2.bitwise_not(frame)
-                frame[np.where((frame == [255, 255, 255]).all(axis=2))] = [0, 0, 0]
-
-                #if (oldCalibration):
-                #    cv2.putText(frame, "CALIBRATED (OLD)", (25, 25), cv2.FONT_HERSHEY_SIMPLEX, 0.25,
-                #                (0, 255, 255), 1, cv2.LINE_AA)
-                #    cv2.putText(frame, "DISTANCE TO TABLE: "+str(tabledistance), (25, 35), cv2.FONT_HERSHEY_SIMPLEX, 0.25,
-                #                (0, 255, 255), 1, cv2.LINE_AA)
-                #else:
-                #    cv2.putText(frame, "CALIBRATED (4)", (25, 25), cv2.FONT_HERSHEY_SIMPLEX, 0.25, (0, 255, 0),
-                #                1, cv2.LINE_AA)
-                #    cv2.putText(frame, "DISTANCE TO TABLE: "+str(tabledistance), (25, 35), cv2.FONT_HERSHEY_SIMPLEX, 0.25, (0, 255, 0),
-                #                1, cv2.LINE_AA)
-
-                if hands:
-                # Print and log the fingertips
-                    for i in range(len(hands)):
-                        # Calculate hand centre
-                        M = cv2.moments(hands[i])
-                        cX = int(M["m10"] / M["m00"])
-                        cY = int(M["m01"] / M["m00"])
-                        cv2.circle(frame, (cX, cY), 4, utils.id_to_random_color(i), -1)
-                        cv2.putText(frame, "  " + str((tabledistance - depthframe[cY][cX]) / 100), (cX, cY),
-                                    cv2.FONT_HERSHEY_SIMPLEX, 0.25, utils.id_to_random_color(i), 1, cv2.LINE_AA)
-                        string = "T " + str(timestamp) + " DH " + str(tabledistance - depthframe[cY][cX])
-                        for f in points[i]:
-                            cv2.circle(frame, f, 4, utils.id_to_random_color(i), -1)
-                            cv2.putText(frame, "  " + str((tabledistance - depthframe[f[1]][f[0]])/100), f, cv2.FONT_HERSHEY_SIMPLEX, 0.25, utils.id_to_random_color(i),
-                                            1, cv2.LINE_AA)
-                            #print("color pixel value of ", f, ":", frame[f[1]][f[0]]) # <- TODO: reverse coordinates idk why
-                            #print("depth pixel value of ", f, ":", depthframe[f[1]][f[0]])
-                            string += " P " + str(f)
-                        log.write(string+"\n")
-                else:
-                    pass
-                    #print("Unable to calibrate")
-                    #frame = colorframe
-                    #cv2.putText(frame, "CALIBRATED (4)", (25, 25), cv2.FONT_HERSHEY_SIMPLEX, 0.25, (0, 0, 255), 1, cv2.LINE_AA)
-                    #cv2.putText(frame, "NOT CALIBRATED", (25, 25), cv2.FONT_HERSHEY_SIMPLEX, 0.25, (0, 0, 255), 1, cv2.LINE_AA)
+                # ########################
+                # # Hand Detection       #
+                # ########################
+                # result, hands, points = hand.getHand(caliColorframe, colorframe, device.getdepthscale())
+                # #drawings = draw.getDraw(colorframe)
+                # #frame = cv2.bitwise_or(result, drawings)
+                # frame = result
+                # # Altering hand colors (to avoid feedback loop
+                # # Option 1: Inverting the picture
+                # frame = cv2.bitwise_not(frame)
+                # frame[np.where((frame == [255, 255, 255]).all(axis=2))] = [0, 0, 0]
+                #
+                # #if (oldCalibration):
+                # #    cv2.putText(frame, "CALIBRATED (OLD)", (25, 25), cv2.FONT_HERSHEY_SIMPLEX, 0.25,
+                # #                (0, 255, 255), 1, cv2.LINE_AA)
+                # #    cv2.putText(frame, "DISTANCE TO TABLE: "+str(tabledistance), (25, 35), cv2.FONT_HERSHEY_SIMPLEX, 0.25,
+                # #                (0, 255, 255), 1, cv2.LINE_AA)
+                # #else:
+                # #    cv2.putText(frame, "CALIBRATED (4)", (25, 25), cv2.FONT_HERSHEY_SIMPLEX, 0.25, (0, 255, 0),
+                # #                1, cv2.LINE_AA)
+                # #    cv2.putText(frame, "DISTANCE TO TABLE: "+str(tabledistance), (25, 35), cv2.FONT_HERSHEY_SIMPLEX, 0.25, (0, 255, 0),
+                # #                1, cv2.LINE_AA)
+                #
+                # if hands:
+                # # Print and log the fingertips
+                #     for i in range(len(hands)):
+                #         # Calculate hand centre
+                #         M = cv2.moments(hands[i])
+                #         cX = int(M["m10"] / M["m00"])
+                #         cY = int(M["m01"] / M["m00"])
+                #         cv2.circle(frame, (cX, cY), 4, utils.id_to_random_color(i), -1)
+                #         cv2.putText(frame, "  " + str((tabledistance - depthframe[cY][cX]) / 100), (cX, cY),
+                #                     cv2.FONT_HERSHEY_SIMPLEX, 0.25, utils.id_to_random_color(i), 1, cv2.LINE_AA)
+                #         string = "T " + str(timestamp) + " DH " + str(tabledistance - depthframe[cY][cX])
+                #         for f in points[i]:
+                #             cv2.circle(frame, f, 4, utils.id_to_random_color(i), -1)
+                #             cv2.putText(frame, "  " + str((tabledistance - depthframe[f[1]][f[0]])/100), f, cv2.FONT_HERSHEY_SIMPLEX, 0.25, utils.id_to_random_color(i),
+                #                             1, cv2.LINE_AA)
+                #             #print("color pixel value of ", f, ":", frame[f[1]][f[0]]) # <- TODO: reverse coordinates idk why
+                #             #print("depth pixel value of ", f, ":", depthframe[f[1]][f[0]])
+                #             string += " P " + str(f)
+                #         log.write(string+"\n")
+                # else:
+                #     pass
+                #     #print("Unable to calibrate")
+                #     #frame = colorframe
+                #     #cv2.putText(frame, "CALIBRATED (4)", (25, 25), cv2.FONT_HERSHEY_SIMPLEX, 0.25, (0, 0, 255), 1, cv2.LINE_AA)
+                #     #cv2.putText(frame, "NOT CALIBRATED", (25, 25), cv2.FONT_HERSHEY_SIMPLEX, 0.25, (0, 0, 255), 1, cv2.LINE_AA)
 
                 if resultsMP.multi_hand_landmarks:
-                    colorframe.flags.writeable = True
+                    caliColorframe.flags.writeable = True
                     for hand_landmarks in resultsMP.multi_hand_landmarks:
                         mp_drawing.draw_landmarks(
-                            frame, hand_landmarks, mp_hands.HAND_CONNECTIONS)
-
+                            caliColorframe, hand_landmarks, mp_hands.HAND_CONNECTIONS)
+                frame = caliColorframe
             # frame = reducer(frame, percentage=40)  # reduce frame by 40%
             # yield frame
             yield frame
@@ -201,7 +191,7 @@ async def netgear_async_playback(pattern):
         server = NetGear_Async(
             address = PeerAddress, port = PeerPort, pattern=1, **options
         )
-        server.config["generator"] = custom_frame_generator()
+        server.config["generator"] = custom_frame_generator(pattern)
         server.launch()
         # gather and run tasks
         input_coroutines = [server.task, client_iterator(client)]
@@ -214,13 +204,21 @@ async def netgear_async_playback(pattern):
         client.close(skip_loop=True)
 
 def getOptions(args=sys.argv[1:]):
-    parser = argparse.ArgumentParser(description="PyMote")
+    parser = argparse.ArgumentParser(description="GECCO")
+    parser.add_argument("-r", "--realsense", help="Realsense device S/N")
     parser.add_argument("-s", "--standalone", help="Standalone Mode", action='store_true')
     parser.add_argument("-o", "--host", type=int, help="Host port number")
     parser.add_argument("-a", "--address", help="Peer IP address")
     parser.add_argument("-p", "--port", type=int, help="Peer port number")
     parser.add_argument("-f", "--file", help="Simulate camera sensor from .bag file")
-    #parser.add_argument("-v", "--verbose",dest='verbose',action='store_true', help="Verbose mode.")
+    parser.add_argument("-d", "--depth", help="Don't use depth camera (faster)", action='store_false')
+    parser.add_argument("-i", "--invisible", help="Gestures are not displayed. Only hand data is logged.",
+                        action='store_true')
+    parser.add_argument("-e", "--edges", help="Only visualize the edges of a hand", action='store_true')
+    parser.add_argument("-c", "--colorspace",
+                        help="choose the colorspace for color segmentation. Popular choice is 'hsv' but we achieved best results with 'lab'",
+                        choices=['hsv', 'lab', 'ycrcb', 'rgb', 'luv', 'xyz', 'hls', 'yuv'], default='lab')
+    parser.add_argument("-v", "--verbose", dest='logging', action='store_true', help="enable vidgear logging")
     options = parser.parse_args(args)
     return options
 
