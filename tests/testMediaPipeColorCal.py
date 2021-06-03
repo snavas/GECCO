@@ -12,17 +12,55 @@ import win32gui
 from win32api import GetSystemMetrics
 from vidgear.gears.helper import reducer
 import mediapipe as mp
+from cv2 import aruco
 
 
 # define pink range
-lower_color = np.array([110, 80, 80])
-upper_color = np.array([170, 255, 255])
+lower_color = np.array([0, 0, 0])
+upper_color = np.array([0, 0, 0])
+prev_detections = []
 
 mp_drawing = mp.solutions.drawing_utils
 mp_hands = mp.solutions.hands
 handsMP = mp_hands.Hands(
-    min_detection_confidence=0.5, min_tracking_confidence=0.5)
+    min_detection_confidence=0.9, min_tracking_confidence=0.5)
 
+def getUpperLowerMediaPipe(colorframe, colorspace):
+    lower = lower_color
+    upper = upper_color
+    global prev_detections
+
+    resultsMP = handsMP.process(colorframe)
+    colorframe = cv2.cvtColor(colorframe, colorspace)
+    if resultsMP.multi_hand_landmarks:
+        curr_detections = []
+        for hand_landmarks in resultsMP.multi_hand_landmarks:
+            landmarks = hand_landmarks.landmark
+            for landmark in landmarks:
+                x = int(landmark.x * 1280)
+                y = int(landmark.y * 720)
+                temp = colorframe[y,x]
+                curr_detections.append(temp)
+        curr_prev_det = curr_detections + prev_detections
+        prev_detections = curr_detections
+        curr_detections = np.asarray(curr_detections)
+        mean = np.mean(curr_prev_det, axis=0)
+        std = np.std(curr_prev_det, axis=0)*2
+        upper = mean + std
+        lower = mean - std
+        upper[upper>255] = 255
+        lower[lower<0] = 0
+        upper = upper.astype(np.uint8)
+        lower = lower.astype(np.uint8)
+
+
+    return lower, upper
+
+def detectcolor3D(colorframe, lower_color, upper_color, colorspace):
+
+    lower_color, upper_color = getUpperLowerMediaPipe(colorframe, colorspace)
+
+    return lower_color, upper_color
 
 def angle(vector1, vector2):
     length1 = math.sqrt(vector1[0] * vector1[0] + vector1[1] * vector1[1])
@@ -33,7 +71,7 @@ def gethandmask(img, colorspace, uncaliColorframe):
     # Convert BGR to HSV
     colorConverted = cv2.cvtColor(img, colorspace)
     global lower_color, upper_color
-    lower_color, upper_color = color.detectcolor3D(uncaliColorframe, lower_color, upper_color, colorspace)
+    lower_color, upper_color = detectcolor3D(img, lower_color, upper_color, colorspace)
     # Threshold the HSV image to get only color colors
     mask = cv2.inRange(colorConverted, lower_color, upper_color)
     # Bitwise-AND mask and original image
@@ -126,6 +164,7 @@ def getcontourmask(handmask, edges):
             cv2.drawContours(mask, [c], -1, 255, -1)  # Draw filled contour in mask
             tempOut = np.zeros_like(handmask)  # Extract out the object and place into output image
             tempOut[mask == 255] = handmask[mask == 255]
+            tempOut = cv2.dilate(tempOut, cv2.getStructuringElement(cv2.MORPH_RECT, (3, 3)), iterations=1)
             tempOut2 = cv2.dilate(tempOut, cv2.getStructuringElement(cv2.MORPH_RECT, (10, 20)), iterations=3)
 
             rHull = getRoughHull(c)
@@ -239,99 +278,13 @@ def getHand(colorframe, uncaliColorframe, colorspace, edges):
 
         # normal mode
         else:
-            result = cv2.bitwise_and(copy, copy, mask=hand["dilated_masks"][1])
+            result = cv2.bitwise_and(copy, copy, mask=hand["mask"])
         hand["hand_image"] = result
     return hands
 
-def getHandMediaPipe(colorframe, uncaliColorframe, colorspace, edges):
-    resultsMP = handsMP.process(colorframe)
-    hands = []
-    if resultsMP.multi_hand_landmarks:
-        for hand_landmarks in resultsMP.multi_hand_landmarks:
-            copy = colorframe.copy()
-            result = np.empty((colorframe.shape[0], colorframe.shape[1], 3), dtype=np.uint8)
-            mask = np.zeros((colorframe.shape[0], colorframe.shape[1]), dtype=np.uint8)
-            background = np.zeros((colorframe.shape[0], colorframe.shape[1]), dtype=np.uint8)
-            background.fill(255)
-            landmarks = hand_landmarks.landmark
-
-            hand = {
-                "hand_crop": []
-            }
-            maxX = 0
-            minX = 1280
-            maxY = 0
-            minY = 720
-            for landmark in landmarks:
-                x = int(landmark.x * 1280)
-                y = int(landmark.y * 720)
-                mask[y,x] = 255
-
-                if maxX < x:
-                    maxX = x
-                elif minX > x:
-                    minX = x
-                if maxY < y:
-                    maxY = y
-                elif minY > y:
-                    minY = y
-                landmark.x = x
-                landmark.y = y
-
-            maxX = min(1280, maxX + 20)
-            maxY = min(720, maxY + 20)
-            minX = max(0, minX - 20)
-            minY = max(0, minY - 20)
-
-            crop_img = copy[minY:maxY, minX:maxX]
-            hand["hand_crop"] = crop_img
-
-            hand_image = hand["hand_crop"]
-            canny_output = cv2.Canny(hand_image, 100, 200)
-
-            hand_image = np.empty((canny_output.shape[0], canny_output.shape[1], 3), dtype=np.uint8)
-            # get contours of edges
-            contours, hierarchy = cv2.findContours(canny_output, cv2.RETR_TREE, cv2.CHAIN_APPROX_SIMPLE)
-            # draw the contours into the empty image
-            edge_color = np.mean(np.array([lower_color, upper_color]), axis=0)
-            for i in range(len(contours)):
-                cv2.drawContours(hand_image, contours, i, (1, 1, 1), 3, cv2.LINE_8, hierarchy, 0)
-
-            result[minY:maxY, minX:maxX] = hand_image
-
-            # Perform the distance transform algorithm
-            dist = cv2.distanceTransform(mask, cv2.DIST_L2, 3)
-            # Normalize the distance image for range = {0.0, 1.0}
-            # so we can visualize and threshold it
-            cv2.normalize(dist, dist, 0, 1.0, cv2.NORM_MINMAX)
-
-            # Threshold to obtain the peaks
-            # This will be the markers for the foreground objects
-            _, dist = cv2.threshold(dist, 0.2, 1.0, cv2.THRESH_BINARY)
-
-            dist_8u = dist.astype('uint8')
-            # Find total markers
-            contours, _ = cv2.findContours(dist_8u, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
-            # Create the marker image for the watershed algorithm
-            markers = np.zeros(dist.shape, dtype=np.int32)
-            # Draw the foreground markers
-            for i in range(len(contours)):
-                cv2.drawContours(markers, contours, i, (i + 1), -1)
-            cv2.rectangle(background, (minX+10,minY+10), (maxX-10,maxY-10), 0,-1)
-            markers = markers + background
-            result = cv2.watershed(result, markers)
-            result = result.astype(np.uint8)
-            result = cv2.bitwise_not(result)
-            #result = cv2.cvtColor(result, cv2.COLOR_GRAY2BGR)
-            result = cv2.dilate(result,cv2.getStructuringElement(cv2.MORPH_RECT, (2, 2)), iterations=1)
-            result = cv2.bitwise_and(copy, copy, mask=result)
-            hand["hand_image"] = result
-
-            hands.append(hand)
-    return hands, resultsMP
 
 def main():
-    device = RealSense('../material/qr_skin_black.bag')
+    device = RealSense('../material/qr_skin_maps.bag')
     try:
         screen_corners = []
         target_corners = []
@@ -366,8 +319,8 @@ def main():
                 # Hand Detection       #
                 ########################
                 frame = np.zeros(colorframe.shape, dtype='uint8')
-                colorspace = cv2.COLOR_BGR2LAB
-                hands, resultsMP = getHandMediaPipe(caliColorframe, colorframe, colorspace, True)
+                colorspace = cv2.COLOR_BGR2HSV
+                hands = getHand(caliColorframe, colorframe, colorspace, False)
 
                 # if hands were detected visualize them
                 if len(hands) > 0:
@@ -381,15 +334,9 @@ def main():
 
                         # add the hand to the frame
                         frame = cv2.bitwise_or(frame, hand_image)
-                resultsMP = handsMP.process(caliColorframe)
-                if resultsMP.multi_hand_landmarks:
-                    caliColorframe.flags.writeable = True
-                    for hand_landmarks in resultsMP.multi_hand_landmarks:
-                        mp_drawing.draw_landmarks(
-                            caliColorframe, hand_landmarks, mp_hands.HAND_CONNECTIONS)
-                frame = caliColorframe
 
             frame.astype(np.uint8)
+            frame = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
             # frame = reducer(frame, percentage=40)  # reduce frame by 40%
             cv2.namedWindow("Output Frame", cv2.WND_PROP_FULLSCREEN)
             cv2.setWindowProperty("Output Frame", cv2.WND_PROP_FULLSCREEN, cv2.WINDOW_NORMAL)

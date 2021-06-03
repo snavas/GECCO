@@ -23,7 +23,7 @@ mp_drawing = mp.solutions.drawing_utils
 mp_hands = mp.solutions.hands
 
 handsMP = mp_hands.Hands(
-    min_detection_confidence=0.5, min_tracking_confidence=0.5)
+    min_detection_confidence=0.9, min_tracking_confidence=0.5)
 HostPort = 5555
 PeerAddress = "localhost"
 PeerPort = 5555
@@ -31,7 +31,7 @@ calibrationMatrix = []
 oldCalibration = False
 continuousCalibration = False
 overlay = True
-DeviceSrc = "material/qr_skin_black.bag"
+DeviceSrc = "material/qr_skin_maps.bag"
 #fileFlag = True
 
 colorspacedict = {
@@ -68,7 +68,7 @@ async def custom_frame_generator(pattern):
             # read frames
             colorframe = device.getcolorstream()
             #if fileFlag:
-            colorframe = cv2.cvtColor(colorframe, cv2.COLOR_RGB2BGR) #Reading from BAG alters the color space and needs to be fixed
+            #colorframe = cv2.cvtColor(colorframe, cv2.COLOR_RGB2BGR) #Reading from BAG alters the color space and needs to be fixed
             # store time in seconds since the epoch (UTC)
             timestamp = time.time()
             # check if frame empty
