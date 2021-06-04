@@ -9,7 +9,7 @@ from vidgear.gears.helper import reducer
 mp_hands = mp.solutions.hands
 mp_drawing = mp.solutions.drawing_utils
 handsMP = mp_hands.Hands(
-    min_detection_confidence=0.4, min_tracking_confidence=0.3)
+    min_detection_confidence=0.4, min_tracking_confidence=0.7)
 
 def getHand(colorframe, colorspace, edges, lower_color, upper_color):
     def calculateCenter(x1, y1, x2, y2):
@@ -109,15 +109,15 @@ def getHand(colorframe, colorspace, edges, lower_color, upper_color):
                 curr_detections.append(color_detection)
             width = maxX-minX
             height = maxY-minY
-            maxX = min(image_cols, maxX + math.floor((width/image_cols)*100))
-            maxY = min(image_rows, maxY + math.floor((height/image_rows)*50))
+            maxX = min(image_cols, maxX + math.floor((width/image_cols)*200))
+            maxY = min(image_rows, maxY + math.floor((height/image_rows)*100))
             minX = max(0, minX - 30)
             minY = max(0, minY - 30)
             crop_img = colorframe[minY:maxY, minX:maxX]
 
             ########################### COLOR DETECTION ####################################
             curr_detections = np.asarray(curr_detections)
-            outlier_detection = DBSCAN(min_samples=3, eps=35)
+            outlier_detection = DBSCAN(min_samples=3, eps=30)
             clusters = outlier_detection.fit_predict(curr_detections)
             curr_detections = curr_detections[(clusters!=-1)]
             if clusters[clusters > 0].size < 3 and clusters[clusters > 1].size == 0:
