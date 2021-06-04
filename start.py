@@ -4,6 +4,7 @@ from vidgear.gears.helper import reducer
 from classes.realsense import RealSense
 from classes.bcolors import bcolors
 import libs.hand as hand_lib
+import libs.hand_neuralNet as hand_lib_nn
 import libs.calibration as cal
 import libs.utils as utils
 import libs.visHeight as height
@@ -17,6 +18,12 @@ import win32con
 import win32gui
 from win32api import GetSystemMetrics
 import traceback
+import mediapipe as mp
+mp_drawing = mp.solutions.drawing_utils
+mp_hands = mp.solutions.hands
+
+handsMP = mp_hands.Hands(
+    min_detection_confidence=0.35, min_tracking_confidence=0.3)
 
 HostPort = 5555
 PeerAddress = "localhost"
@@ -49,8 +56,8 @@ async def custom_frame_generator(pattern):
         # initialize corners
         transform_mat = np. array([])
         # define initial pink range
-        lower_color = np.array([110, 80, 80])
-        upper_color = np.array([170, 255, 255])
+        lower_color = np.array([1, 1, 1])
+        upper_color = np.array([0, 0, 0])
         # translate colorspace to opencv code
         colorspace = colorspacedict[pattern.colorspace]
 
@@ -92,8 +99,11 @@ async def custom_frame_generator(pattern):
                 # Hand Detection       #
                 ########################
                 frame = np.zeros(colorframe.shape, dtype='uint8')
-                hands, lower_color, upper_color = hand_lib.getHand(caliColorframe, colorframe, colorspace, pattern.edges,
+                hands, lower_color, upper_color = hand_lib.getHand(caliColorframe, colorframe, colorspace,
+                                                                   pattern.edges,
                                                                    lower_color, upper_color)
+                # Mediapipe
+                # hands, lower_color, upper_color = hand_lib_nn.getHand(caliColorframe, colorspace, pattern.edges, lower_color, upper_color)
 
                 # if hands were detected visualize them
                 if len(hands) > 0:
@@ -150,7 +160,13 @@ async def custom_frame_generator(pattern):
                                     f[1]), "\n"]))
                         # add the hand to the frame
                         frame = cv2.bitwise_or(frame, hand_image)
-
+                ##### Mediapipe: visualize detections ###########
+                # resultsMP = handsMP.process(caliColorframe)
+                # if resultsMP.multi_hand_landmarks:
+                #     frame.flags.writeable = True
+                #     for hand_landmarks in resultsMP.multi_hand_landmarks:
+                #         mp_drawing.draw_landmarks(
+                #             frame, hand_landmarks, mp_hands.HAND_CONNECTIONS)
             # frame = reducer(frame, percentage=40)  # reduce frame by 40%
             # to measure time to completion
             # print(time.time() - timestamp)
