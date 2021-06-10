@@ -71,8 +71,8 @@ async def custom_frame_generator(pattern):
             timestamp = time.time()
             # read frames
             colorframe = device.getcolorstream()
-            #if fileFlag:
-            #    colorframe = cv2.cvtColor(colorframe, cv2.COLOR_RGB2BGR) #Reading from BAG alters the color space and needs to be fixed
+
+            colorframe = cv2.cvtColor(colorframe, cv2.COLOR_RGB2BGR) #Reading from BAG alters the color space and needs to be fixed
 
             # check if frame empty
             if colorframe is None:
@@ -99,11 +99,11 @@ async def custom_frame_generator(pattern):
                 # Hand Detection       #
                 ########################
                 frame = np.zeros(colorframe.shape, dtype='uint8')
-                hands, lower_color, upper_color = hand_lib.getHand(caliColorframe, colorframe, colorspace,
-                                                                   pattern.edges,
-                                                                   lower_color, upper_color)
+                # hands, lower_color, upper_color = hand_lib.getHand(caliColorframe, colorframe, colorspace,
+                #                                                   pattern.edges,
+                #                                                   lower_color, upper_color)
                 # Mediapipe
-                # hands, lower_color, upper_color = hand_lib_nn.getHand(caliColorframe, colorspace, pattern.edges, lower_color, upper_color)
+                hands, lower_color, upper_color = hand_lib_nn.getHand(caliColorframe, colorspace, pattern.edges, lower_color, upper_color, handsMP, log)
 
                 # if hands were detected visualize them
                 if len(hands) > 0:
@@ -136,7 +136,7 @@ async def custom_frame_generator(pattern):
                                 cv2.circle(hand_image, (cX, cY), 4, utils.id_to_random_color(i), -1)
                                 cv2.putText(hand_image, "  " + str(handToTableDist), (cX, cY),
                                             cv2.FONT_HERSHEY_SIMPLEX, 0.25, utils.id_to_random_color(i), 1, cv2.LINE_AA)
-                            log.write(''.join([str(timestamp), " ", str(float(tabledistance) - float(depthframe[cY][cX])), " H ", str(cX), " ", str(cY), "\n"]))
+                            #log.write(''.join([str(timestamp), " ", str(float(tabledistance) - float(depthframe[cY][cX])), " H ", str(cX), " ", str(cY), "\n"]))
 
                             for f in hand["fingers"]:
                                 if pattern.logging:
@@ -145,28 +145,28 @@ async def custom_frame_generator(pattern):
                                                 1, cv2.LINE_AA)
                                 #print("color pixel value of ", f, ":", frame[f[1]][f[0]]) # <- TODO: reverse coordinates idk why
                                 #print("depth pixel value of ", f, ":", depthframe[f[1]][f[0]])
-                                log.write(''.join([str(timestamp), " ", str(float(tabledistance) - float(depthframe[cY][cX])), " P ",  str(f[0]), " ", str(f[1]), "\n"]))
+                                #log.write(''.join([str(timestamp), " ", str(float(tabledistance) - float(depthframe[cY][cX])), " P ",  str(f[0]), " ", str(f[1]), "\n"]))
                         else:
                             if pattern.logging:
                                 cv2.circle(hand_image, (cX, cY), 4, utils.id_to_random_color(i), -1)
                             # record depth as "Null"
-                            log.write(str(timestamp) + " Null H " + str(cX) + " " + str(
-                                cY) + "\n")
+                            #log.write(str(timestamp) + " Null H " + str(cX) + " " + str(
+                                #cY) + "\n")
                             for f in hand["fingers"]:
                                 if pattern.logging:
                                     cv2.circle(hand_image, f, 4, utils.id_to_random_color(i), -1)
                                 # record depth as "Null"
-                                log.write(''.join([str(timestamp), " Null P ", str(f[0]), " ", str(
-                                    f[1]), "\n"]))
+                                #log.write(''.join([str(timestamp), " Null P ", str(f[0]), " ", str(
+                                    #f[1]), "\n"]))
                         # add the hand to the frame
                         frame = cv2.bitwise_or(frame, hand_image)
                 ##### Mediapipe: visualize detections ###########
-                # resultsMP = handsMP.process(caliColorframe)
-                # if resultsMP.multi_hand_landmarks:
-                #     frame.flags.writeable = True
-                #     for hand_landmarks in resultsMP.multi_hand_landmarks:
-                #         mp_drawing.draw_landmarks(
-                #             frame, hand_landmarks, mp_hands.HAND_CONNECTIONS)
+                resultsMP = handsMP.process(caliColorframe)
+                if resultsMP.multi_hand_landmarks:
+                    frame.flags.writeable = True
+                    for hand_landmarks in resultsMP.multi_hand_landmarks:
+                        mp_drawing.draw_landmarks(
+                            frame, hand_landmarks, mp_hands.HAND_CONNECTIONS)
             # frame = reducer(frame, percentage=40)  # reduce frame by 40%
             # to measure time to completion
             # print(time.time() - timestamp)
