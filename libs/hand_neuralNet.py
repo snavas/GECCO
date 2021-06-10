@@ -122,7 +122,7 @@ def getHand(colorframe, colorspace, edges, lower_color, upper_color, handsMP, lo
             lowerThresh = curr_detections[curr_detections < 10].size / curr_detections.size
             # for detection in curr_detections:
             #     log.write(''.join(["[", str(detection[0]), ", ", str(detection[1]), ", ", str(detection[2]), "],", "\n"]))
-            if upperThresh < 0.1 and lowerThresh < 0.1:
+            if upperThresh < 0.35 and lowerThresh < 0.35:
                 if clusters[clusters > 0].size < 3 and clusters[clusters > 1].size == 0:
                     mean = np.mean(curr_detections, axis=0)
                     #if all(i < 238 for i in mean) and all(i > 17 for i in mean):
@@ -160,8 +160,8 @@ def getHand(colorframe, colorspace, edges, lower_color, upper_color, handsMP, lo
                             tempOut = np.zeros_like(handmask)  # Extract out the object and place into output image
                             tempOut[mask == 255] = handmask[mask == 255]
                             # dilate and erode to remove holes
-                            tempOut = cv2.dilate(tempOut, cv2.getStructuringElement(cv2.MORPH_RECT, (5, 5)), iterations=1)
-                            tempOut = cv2.erode(tempOut, cv2.getStructuringElement(cv2.MORPH_RECT, (3, 3)), iterations=1)
+                            tempOut = cv2.dilate(tempOut, cv2.getStructuringElement(cv2.MORPH_RECT, (12, 12)), iterations=1)
+                            tempOut = cv2.erode(tempOut, cv2.getStructuringElement(cv2.MORPH_RECT, (9, 9)), iterations=1)
 
                             vertices = getHullVertices(rHull, c)
                             points = filterVerticesByAngle(vertices)
