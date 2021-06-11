@@ -69,24 +69,30 @@ def getHand(colorframe, colorspace, edges, lower_color, upper_color, handsMP, lo
 
     detectionFrame = cv2.cvtColor(colorframe, colorspace)
     hands = []
+    # apply mediapipe to the image
     resultsMP = handsMP.process(colorframe)
+    # if hands were detected
     if resultsMP.multi_hand_landmarks:
         image_rows, image_cols, _ = colorframe.shape
+        # for every hand
         for hand_landmarks in resultsMP.multi_hand_landmarks:
+            landmarks = hand_landmarks.landmark
+            # initialize some variables
             curr_detections = []
             maskTemp = np.zeros((colorframe.shape[0], colorframe.shape[1]), dtype=np.uint8)
-            landmarks = hand_landmarks.landmark
             maxX = 0
             minX = image_cols
             maxY = 0
             minY = image_rows
-
+            # get the color and extent of all detected joints
             for landmark in landmarks:
+                # get the position of the detection (has to be smaller than the maximum extent)
                 x = min(math.floor(landmark.x * image_cols), image_cols-1)
                 y = min(math.floor(landmark.y * image_rows), image_rows-1)
+                # get the color at this detection
                 color_detection = detectionFrame[y, x]
                 curr_detections.append(color_detection)
-
+                # update the extent of the detections
                 if maxX < x:
                     maxX = x
                 elif minX > x:
@@ -97,46 +103,50 @@ def getHand(colorframe, colorspace, edges, lower_color, upper_color, handsMP, lo
                     minY = y
                 landmark.x = x
                 landmark.y = y
+            # also get the color from points in between joints
             for connection in mp_hands.HAND_CONNECTIONS:
                 start_idx = connection[0]
                 end_idx = connection[1]
                 start_point = landmarks[start_idx]
                 end_point = landmarks[end_idx]
+                # get the middle between the joints
                 x,y = calculateCenter(start_point.x, start_point.y, end_point.x, end_point.y)
+                # get the color at this detection
                 color_detection = detectionFrame[y, x]
                 curr_detections.append(color_detection)
             width = maxX-minX
             height = maxY-minY
+            # enlarge the extent by 10 to 20 percent
             maxX = min(image_cols, maxX + math.floor((width/image_cols)*200))
             maxY = min(image_rows, maxY + math.floor((height/image_rows)*100))
-            minX = max(0, minX - 30)
-            minY = max(0, minY - 30)
+            minX = max(0, minX - math.floor((width/image_cols)*200))
+            minY = max(0, minY - math.floor((height/image_rows)*100))
             crop_img = colorframe[minY:maxY, minX:maxX]
 
             ########################### COLOR DETECTION ####################################
             curr_detections = np.asarray(curr_detections)
             outlier_detection = DBSCAN(min_samples=3, eps=30)
             clusters = outlier_detection.fit_predict(curr_detections)
-            curr_detections = curr_detections[(clusters!=-1)]
-            upperThresh = curr_detections[curr_detections>245].size / curr_detections.size
-            lowerThresh = curr_detections[curr_detections < 10].size / curr_detections.size
+            curr_detections = curr_detections[(clusters != -1)]
+            # The hand color is usually not extremely bright or extremely dark, so the detection are thresholded
+            upperThresh = curr_detections[curr_detections > 248].size / curr_detections.size
+            lowerThresh = curr_detections[curr_detections < 7].size / curr_detections.size
             # for detection in curr_detections:
             #     log.write(''.join(["[", str(detection[0]), ", ", str(detection[1]), ", ", str(detection[2]), "],", "\n"]))
-            if upperThresh < 0.35 and lowerThresh < 0.35:
+            # The detection is only declared valid if not too many values are extremely bright/dark
+            if upperThresh < 0.3 and lowerThresh < 0.3:
+                # If there are too many clusters, the detected color was not very homogenic and therefore probably not valid
                 if clusters[clusters > 0].size < 3 and clusters[clusters > 1].size == 0:
+                    # calculate mean and standard deviation of the detected colors
                     mean = np.mean(curr_detections, axis=0)
-                    #if all(i < 238 for i in mean) and all(i > 17 for i in mean):
-                    std = np.std(curr_detections, axis=0) * 3
-                    upper_color = mean + std
-                    lower_color = mean - std
+                    std = np.std(curr_detections, axis=0)
+                    upper_color = mean + std * 3
+                    lower_color = mean - std * 3
                     upper_color[upper_color > 255] = 255
                     lower_color[lower_color < 0] = 0
                     upper_color = upper_color.astype(np.uint8)
                     lower_color = lower_color.astype(np.uint8)
-                    # else:
-                    #     break
-                # else:
-                #     break
+
                 ########################### HAND MASK #######################################
                 colorConverted = cv2.cvtColor(crop_img, colorspace)
                 mask = cv2.inRange(colorConverted, lower_color, upper_color)
