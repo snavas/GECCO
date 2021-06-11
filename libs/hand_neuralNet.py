@@ -170,8 +170,8 @@ def getHand(colorframe, colorspace, edges, lower_color, upper_color, handsMP, lo
                             tempOut = np.zeros_like(handmask)  # Extract out the object and place into output image
                             tempOut[mask == 255] = handmask[mask == 255]
                             # dilate and erode to remove holes
-                            tempOut = cv2.dilate(tempOut, cv2.getStructuringElement(cv2.MORPH_RECT, (12, 12)), iterations=1)
-                            tempOut = cv2.erode(tempOut, cv2.getStructuringElement(cv2.MORPH_RECT, (9, 9)), iterations=1)
+                            tempOut = cv2.dilate(tempOut, cv2.getStructuringElement(cv2.MORPH_RECT, (11, 11)), iterations=1)
+                            tempOut = cv2.erode(tempOut, cv2.getStructuringElement(cv2.MORPH_RECT, (8, 8)), iterations=1)
 
                             vertices = getHullVertices(rHull, c)
                             points = filterVerticesByAngle(vertices)
@@ -181,23 +181,19 @@ def getHand(colorframe, colorspace, edges, lower_color, upper_color, handsMP, lo
                                 "contour": c,
                                 "fingers": points
                             }
+
+                            copy = colorframe.copy()
                             # edge only mode
                             if edges:
-                                hand["dilated_masks"] = []
-                                # Heavily dilated
-                                tempOutDilBig = cv2.dilate(tempOut, cv2.getStructuringElement(cv2.MORPH_RECT, (15, 30)),
+                                # Heavily dilated mask
+                                heavily_dilated = cv2.dilate(tempOut, cv2.getStructuringElement(cv2.MORPH_RECT, (15, 30)),
                                                            iterations=3)
-                                hand["dilated_masks"].append(tempOutDilBig)
-                                # A little less dilated
-                                tempOutDilSmol = cv2.dilate(tempOut, cv2.getStructuringElement(cv2.MORPH_RECT, (15, 15)),
+                                # A little less dilated mask
+                                dilated = cv2.dilate(tempOut, cv2.getStructuringElement(cv2.MORPH_RECT, (15, 15)),
                                                             iterations=1)
-                                hand["dilated_masks"].append(tempOutDilSmol)
-                            ####################
-                            copy = colorframe.copy()
-                            # edge only mode # TODO: not tested
-                            if edges:
+
                                 # get a really dilated masked out hand, so that the edges dont have to be calculated for the entire image
-                                hand_image = cv2.bitwise_and(copy, copy, mask=hand["dilated_masks"][0])
+                                hand_image = cv2.bitwise_and(copy, copy, mask=heavily_dilated)
                                 # calculate edges
                                 canny_output = cv2.Canny(hand_image, 100, 200)
                                 # empty image
@@ -214,7 +210,7 @@ def getHand(colorframe, colorspace, edges, lower_color, upper_color, handsMP, lo
                                 for i in range(len(contours)):
                                     cv2.drawContours(hand_image, contours, i, (1, 1, 1), 1, cv2.LINE_8, hierarchy, 0)
                                 # mask out the outer edges, that belong to the more heavily dilated mask
-                                result = cv2.bitwise_and(hand_image, hand_image, mask=hand["dilated_masks"][1])
+                                result = cv2.bitwise_and(hand_image, hand_image, mask=dilated)
                                 # comment this in, to see edges and hand:
                                 # hand_image_norm = cv2.bitwise_and(copy, copy, mask=curMask[0])
                                 # hand_image = cv2.bitwise_or(hand_image, hand_image_norm)
