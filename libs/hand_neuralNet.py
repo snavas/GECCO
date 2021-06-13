@@ -159,10 +159,11 @@ def getHand(colorframe, colorspace, edges, lower_color, upper_color, handsMP, lo
                 method = cv2.CHAIN_APPROX_SIMPLE
                 hand_contours = []
                 contours, hierarchy = cv2.findContours(handmask, mode, method)
-                finalMask = np.zeros_like(handmask)
+                # initialize hand
                 hand = {
                     "contour": np.empty(shape=(0,1,2), dtype=np.uint8),
-                    "fingers": np.empty(shape=(0,2), dtype=np.uint8)
+                    "fingers": np.empty(shape=(0,2), dtype=np.uint8),
+                    "mask": np.zeros_like(handmask)
                 }
                 for c in contours:
                     # If contours are bigger than a certain area we push them to the array
@@ -184,10 +185,9 @@ def getHand(colorframe, colorspace, edges, lower_color, upper_color, handsMP, lo
                                 hand["contour"] = np.concatenate((hand["contour"], c))
                             if points.shape != (0,):
                                 hand["fingers"] = np.concatenate((hand["fingers"], points))
-                            finalMask = cv2.bitwise_or(finalMask, tempOut)
+                            hand["mask"] = cv2.bitwise_or(hand["mask"], tempOut)
+                # if there is a contour there is also a hand
                 if hand["contour"].shape != (0,1,2):
-                    hand["mask"] = finalMask
-
                     copy = colorframe.copy()
                     # edge only mode
                     if edges:
