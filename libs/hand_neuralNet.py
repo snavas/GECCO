@@ -9,7 +9,7 @@ from vidgear.gears.helper import reducer
 mp_hands = mp.solutions.hands
 mp_drawing = mp.solutions.drawing_utils
 
-def getHand(colorframe, colorspace, edges, lower_color, upper_color, handsMP, log):
+def getHand(colorframe, colorspace, edges, lower_color, upper_color, handsMP, log, min_samples, eps):
     def calculateCenter(x1, y1, x2, y2):
         x = int((x2 - x1) / 2 + x1)
         y = int((y2 - y1) / 2 + y1)
@@ -125,9 +125,11 @@ def getHand(colorframe, colorspace, edges, lower_color, upper_color, handsMP, lo
 
             ########################### COLOR DETECTION ####################################
             curr_detections = np.asarray(curr_detections)
-            outlier_detection = DBSCAN(min_samples=3, eps=30)
+            outlier_detection = DBSCAN(min_samples=min_samples, eps=eps)
             clusters = outlier_detection.fit_predict(curr_detections)
             curr_detections = curr_detections[(clusters != -1)]
+            if curr_detections.size == 0:
+                break
             # The hand color is usually not extremely bright or extremely dark, so the detection are thresholded
             upperThresh = curr_detections[curr_detections > 248].size / curr_detections.size
             lowerThresh = curr_detections[curr_detections < 7].size / curr_detections.size
@@ -176,8 +178,8 @@ def getHand(colorframe, colorspace, edges, lower_color, upper_color, handsMP, lo
                             tempOut = np.zeros_like(handmask)  # Extract out the object and place into output image
                             tempOut[tempMask == 255] = handmask[tempMask == 255]
                             # dilate and erode to remove holes
-                            tempOut = cv2.dilate(tempOut, cv2.getStructuringElement(cv2.MORPH_RECT, (11, 11)), iterations=1)
-                            tempOut = cv2.erode(tempOut, cv2.getStructuringElement(cv2.MORPH_RECT, (8, 8)), iterations=1)
+                            tempOut = cv2.dilate(tempOut, cv2.getStructuringElement(cv2.MORPH_RECT, (9, 9)), iterations=1)
+                            tempOut = cv2.erode(tempOut, cv2.getStructuringElement(cv2.MORPH_RECT, (6, 6)), iterations=1)
 
                             vertices = getHullVertices(rHull, c)
                             points = np.array(filterVerticesByAngle(vertices))

@@ -21,9 +21,8 @@ import traceback
 import mediapipe as mp
 mp_drawing = mp.solutions.drawing_utils
 mp_hands = mp.solutions.hands
-
-handsMP = mp_hands.Hands(
-    min_detection_confidence=0.35, min_tracking_confidence=0.3)
+import tkinter as tk
+import threading
 
 HostPort = 5555
 PeerAddress = "localhost"
@@ -31,7 +30,16 @@ PeerPort = 5555
 continuousCalibration = False
 overlay = True
 DeviceSrc = "0"
-#fileFlag = True
+finish = False
+
+min_detection_confidence = 0.35
+min_tracking_confidence = 0.3
+min_samples = 3
+eps = 30
+
+handsMP = mp_hands.Hands(
+    min_detection_confidence=min_detection_confidence,
+    min_tracking_confidence=min_tracking_confidence)
 
 colorspacedict = {
     "hsv": cv2.COLOR_BGR2HSV,
@@ -61,8 +69,10 @@ async def custom_frame_generator(pattern):
         # translate colorspace to opencv code
         colorspace = colorspacedict[pattern.colorspace]
 
+        global finish
+
         # loop over stream until its terminated
-        while True:
+        while not finish:
             #print("start")
             ########################
             # Startup              #
@@ -103,7 +113,8 @@ async def custom_frame_generator(pattern):
                 #                                                   pattern.edges,
                 #                                                   lower_color, upper_color)
                 # Mediapipe
-                hands, lower_color, upper_color = hand_lib_nn.getHand(caliColorframe, colorspace, pattern.edges, lower_color, upper_color, handsMP, log)
+                global min_samples, eps
+                hands, lower_color, upper_color = hand_lib_nn.getHand(caliColorframe, colorspace, pattern.edges, lower_color, upper_color, handsMP, log, min_samples, eps)
 
                 # if hands were detected visualize them
                 if len(hands) > 0:
@@ -161,12 +172,12 @@ async def custom_frame_generator(pattern):
                         # add the hand to the frame
                         frame = cv2.bitwise_or(frame, hand_image)
                 ##### Mediapipe: visualize detections ###########
-                # resultsMP = handsMP.process(caliColorframe)
-                # if resultsMP.multi_hand_landmarks:
-                #     frame.flags.writeable = True
-                #     for hand_landmarks in resultsMP.multi_hand_landmarks:
-                #         mp_drawing.draw_landmarks(
-                #             frame, hand_landmarks, mp_hands.HAND_CONNECTIONS)
+                resultsMP = handsMP.process(caliColorframe)
+                if resultsMP.multi_hand_landmarks:
+                    frame.flags.writeable = True
+                    for hand_landmarks in resultsMP.multi_hand_landmarks:
+                        mp_drawing.draw_landmarks(
+                            frame, hand_landmarks, mp_hands.HAND_CONNECTIONS)
             # frame = reducer(frame, percentage=40)  # reduce frame by 40%
             # to measure time to completion
             # print(time.time() - timestamp)
@@ -253,6 +264,53 @@ def getOptions(args=sys.argv[1:]):
     options = parser.parse_args(args)
     return options
 
+def set_valueA(val):
+    global handsMP, min_detection_confidence, min_tracking_confidence
+    min_detection_confidence = float(val)
+    handsMP = mp_hands.Hands(
+        min_detection_confidence=min_detection_confidence,
+        min_tracking_confidence=min_tracking_confidence)
+
+def set_valueB(val):
+    global handsMP, min_detection_confidence, min_tracking_confidence
+    min_tracking_confidence = float(val)
+    handsMP = mp_hands.Hands(
+        min_detection_confidence=min_detection_confidence,
+        min_tracking_confidence=min_tracking_confidence)
+
+def set_valueC(val):
+    global min_sample
+    min_sample = int(val)
+
+def set_valueD(val):
+    global eps
+    eps = int(val)
+
+class App(object):
+    def __init__(self, master):
+        master.geometry("200x200")
+        master.title("My GUI Title")
+        w = tk.Scale(master, from_=0, to=1, resolution=0.01, orient=tk.HORIZONTAL, command=set_valueA)
+        w.set(0.35)
+        w.pack()
+        w = tk.Scale(master, from_=0, to=1, resolution=0.01, orient=tk.HORIZONTAL, command=set_valueB)
+        w.set(0.30)
+        w.pack()
+        w = tk.Scale(master, from_=0, to=15, orient=tk.HORIZONTAL, command=set_valueC)
+        w.set(3)
+        w.pack()
+        w = tk.Scale(master, from_=0, to=100, orient=tk.HORIZONTAL, command=set_valueD)
+        w.set(30)
+        w.pack()
+
+def tkinterGui():
+    global finish
+    mainWindow = tk.Tk()
+    app = App(mainWindow)
+    mainWindow.mainloop()
+    #When the GUI is closed we set finish to "True"
+    finish = True
+
 if __name__ == '__main__':
     options = getOptions(sys.argv[1:])
     DeviceSrc = options.realsense
@@ -272,5 +330,12 @@ if __name__ == '__main__':
     # configure Realsense device
     if options.file:
         DeviceSrc = options.file
-
-    asyncio.run(netgear_async_playback(options))
+    if options.logging:
+        GUI = threading.Thread(target=tkinterGui)
+        GUI.start()
+        Process = threading.Thread(target=asyncio.run(netgear_async_playback(options)))
+        Process.start()
+        GUI.join()
+        Process.join()
+    else:
+        asyncio.run(netgear_async_playback(options))
