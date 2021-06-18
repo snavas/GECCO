@@ -79,6 +79,7 @@ def getHand(colorframe, colorspace, edges, lower_color, upper_color, handsMP, lo
             landmarks = hand_landmarks.landmark
             # initialize some variables
             curr_detections = []
+            points = []
             maskTemp = np.zeros((colorframe.shape[0], colorframe.shape[1]), dtype=np.uint8)
             maxX = 0
             minX = image_cols
@@ -103,6 +104,7 @@ def getHand(colorframe, colorspace, edges, lower_color, upper_color, handsMP, lo
                     minY = y
                 landmark.x = x
                 landmark.y = y
+                points.append((x,y))
             # also get the color from points in between joints
             for connection in mp_hands.HAND_CONNECTIONS:
                 start_idx = connection[0]
@@ -164,7 +166,7 @@ def getHand(colorframe, colorspace, edges, lower_color, upper_color, handsMP, lo
                 # initialize hand
                 hand = {
                     "contour": np.empty(shape=(0,1,2), dtype=np.uint8),
-                    "fingers": np.empty(shape=(0,2), dtype=np.uint8),
+                    "fingers": points,
                     "mask": np.zeros_like(handmask)
                 }
                 for c in contours:
@@ -181,12 +183,8 @@ def getHand(colorframe, colorspace, edges, lower_color, upper_color, handsMP, lo
                             tempOut = cv2.dilate(tempOut, cv2.getStructuringElement(cv2.MORPH_RECT, (9, 9)), iterations=1)
                             tempOut = cv2.erode(tempOut, cv2.getStructuringElement(cv2.MORPH_RECT, (6, 6)), iterations=1)
 
-                            vertices = getHullVertices(rHull, c)
-                            points = np.array(filterVerticesByAngle(vertices))
                             if c.shape != (0,):
                                 hand["contour"] = np.concatenate((hand["contour"], c))
-                            if points.shape != (0,):
-                                hand["fingers"] = np.concatenate((hand["fingers"], points))
                             hand["mask"] = cv2.bitwise_or(hand["mask"], tempOut)
                 # if there is a contour there is also a hand
                 if hand["contour"].shape != (0,1,2):

@@ -172,12 +172,12 @@ async def custom_frame_generator(pattern):
                         # add the hand to the frame
                         frame = cv2.bitwise_or(frame, hand_image)
                 ##### Mediapipe: visualize detections ###########
-                resultsMP = handsMP.process(caliColorframe)
-                if resultsMP.multi_hand_landmarks:
-                    frame.flags.writeable = True
-                    for hand_landmarks in resultsMP.multi_hand_landmarks:
-                        mp_drawing.draw_landmarks(
-                            frame, hand_landmarks, mp_hands.HAND_CONNECTIONS)
+                # resultsMP = handsMP.process(caliColorframe)
+                # if resultsMP.multi_hand_landmarks:
+                #     frame.flags.writeable = True
+                #     for hand_landmarks in resultsMP.multi_hand_landmarks:
+                #         mp_drawing.draw_landmarks(
+                #             frame, hand_landmarks, mp_hands.HAND_CONNECTIONS)
             # frame = reducer(frame, percentage=40)  # reduce frame by 40%
             # to measure time to completion
             # print(time.time() - timestamp)
