@@ -5,6 +5,7 @@ from classes.realsense import RealSense
 from classes.bcolors import bcolors
 import libs.hand as hand_lib
 import libs.hand_neuralNet as hand_lib_nn
+import libs.ir_detection as ir_detection
 import libs.calibration as cal
 import libs.utils as utils
 import libs.visHeight as height
@@ -81,6 +82,7 @@ async def custom_frame_generator(pattern):
             timestamp = time.time()
             # read frames
             colorframe = device.getcolorstream()
+            irframe = device.getirstream()
 
             colorframe = cv2.cvtColor(colorframe, cv2.COLOR_RGB2BGR) #Reading from BAG alters the color space and needs to be fixed
 
@@ -104,6 +106,7 @@ async def custom_frame_generator(pattern):
             else:
                 # TODO: derive resolution from width and height of original frame?
                 caliColorframe = cv2.warpPerspective(colorframe, transform_mat, (1280, 720))
+                caliIrframe = cv2.warpPerspective(irframe, transform_mat, (1280, 720))
 
                 ########################
                 # Hand Detection       #
@@ -114,7 +117,8 @@ async def custom_frame_generator(pattern):
                 #                                                   lower_color, upper_color)
                 # Mediapipe
                 global min_samples, eps
-                hands, lower_color, upper_color = hand_lib_nn.getHand(caliColorframe, colorspace, pattern.edges, lower_color, upper_color, handsMP, log, min_samples, eps)
+                hands, lower_color, upper_color = [], lower_color, upper_color#hand_lib_nn.getHand(caliColorframe, colorspace, pattern.edges, lower_color, upper_color, handsMP, log, min_samples, eps)
+                frame = ir_detection.detect(caliIrframe, caliColorframe)
 
                 # if hands were detected visualize them
                 if len(hands) > 0:

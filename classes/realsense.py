@@ -32,6 +32,7 @@ class RealSense(Device):
             print("<*> Using device: ", id)
             config.enable_device(id)
             config.enable_stream(rs.stream.depth, 1280, 720, rs.format.z16, 30)
+            config.enable_stream(rs.stream.infrared, 1280, 720)
             config.enable_stream(rs.stream.color, 1280, 720, rs.format.bgr8, 30)
             #for sensor in devices[0].query_sensors():
             #    print(sensor)
@@ -119,6 +120,12 @@ class RealSense(Device):
         aligned_color_frame = self.align.process(frames).get_color_frame()
         color_image = np.asanyarray(aligned_color_frame.get_data())
         return color_image
+
+    def getirstream(self):
+        frames = self.pipeline.wait_for_frames()
+        aligned_infrared_frame = self.align.process(frames).get_infrared_frame()
+        infrared_image = np.asanyarray(aligned_infrared_frame.get_data())
+        return infrared_image
 
     def getdepthstream(self):
         frames = self.pipeline.wait_for_frames()
