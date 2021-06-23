@@ -69,6 +69,7 @@ async def custom_frame_generator(pattern):
         upper_color = np.array([0, 0, 0])
         # translate colorspace to opencv code
         colorspace = colorspacedict[pattern.colorspace]
+        prev_frames = []
 
         global finish
 
@@ -117,8 +118,15 @@ async def custom_frame_generator(pattern):
                 #                                                   lower_color, upper_color)
                 # Mediapipe
                 global min_samples, eps
-                hands, lower_color, upper_color = [], lower_color, upper_color#hand_lib_nn.getHand(caliColorframe, colorspace, pattern.edges, lower_color, upper_color, handsMP, log, min_samples, eps)
-                frame = ir_detection.detect(caliIrframe, caliColorframe)
+                hands, lower_color, upper_color = hand_lib_nn.getHand(caliColorframe, colorspace, pattern.edges, lower_color, upper_color, handsMP, log, min_samples, eps)
+
+                ir = ir_detection.detect(caliIrframe, caliColorframe)
+                prev_frames.append(ir)
+                if len(prev_frames) > 0:
+                    for prev in prev_frames:
+                        frame = cv2.bitwise_or(frame, cv2.cvtColor(prev, cv2.COLOR_GRAY2BGR))
+                if len(prev_frames) > 30:
+                    prev_frames.pop(0)
 
                 # if hands were detected visualize them
                 if len(hands) > 0:
