@@ -124,7 +124,7 @@ async def custom_frame_generator(pattern):
                 prev_frames.append(ir)
                 if len(prev_frames) > 0:
                     for prev in prev_frames:
-                        frame = cv2.bitwise_or(frame, cv2.cvtColor(prev, cv2.COLOR_GRAY2BGR))
+                        frame = cv2.bitwise_or(frame, prev)
                 if len(prev_frames) > 30:
                     prev_frames.pop(0)
 
