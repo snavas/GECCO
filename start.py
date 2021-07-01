@@ -69,7 +69,8 @@ async def custom_frame_generator(pattern):
         upper_color = np.array([0, 0, 0])
         # translate colorspace to opencv code
         colorspace = colorspacedict[pattern.colorspace]
-        prev_frames = []
+        prev_frame = []
+        prev_point = (-1,-1)
 
         global finish
 
@@ -109,6 +110,28 @@ async def custom_frame_generator(pattern):
                 caliColorframe = cv2.warpPerspective(colorframe, transform_mat, (1280, 720))
                 caliIrframe = cv2.warpPerspective(irframe, transform_mat, (1280, 720))
 
+                ##################
+                # IR Annotations #
+                ##################
+                ir, point = ir_detection.detect(caliIrframe, caliColorframe)
+                # semi-permanent
+                # prev_frame.append(ir)
+                # if len(prev_frame) > 0:
+                #     for prev in prev_frame:
+                #         frame = cv2.bitwise_or(frame, prev)
+                # if len(prev_frame) > 30:
+                #     prev_frame.pop(0)
+
+                # permanent
+                if prev_point[0] != -1 and point[0] != -1:
+                    cv2.line(prev_frame, prev_point, point, (202, 3, 252), 3)
+                prev_point = point
+                if len(prev_frame) > 0:
+                    prev_frame = cv2.bitwise_or(ir, prev_frame)
+                else:
+                    prev_frame = ir.copy()
+                frame = cv2.bitwise_or(frame, prev_frame)
+
                 ########################
                 # Hand Detection       #
                 ########################
@@ -119,14 +142,6 @@ async def custom_frame_generator(pattern):
                 # Mediapipe
                 global min_samples, eps
                 hands, lower_color, upper_color = hand_lib_nn.getHand(caliColorframe, colorspace, pattern.edges, lower_color, upper_color, handsMP, log, min_samples, eps)
-
-                ir = ir_detection.detect(caliIrframe, caliColorframe)
-                prev_frames.append(ir)
-                if len(prev_frames) > 0:
-                    for prev in prev_frames:
-                        frame = cv2.bitwise_or(frame, prev)
-                if len(prev_frames) > 30:
-                    prev_frames.pop(0)
 
                 # if hands were detected visualize them
                 if len(hands) > 0:
@@ -223,7 +238,7 @@ async def client_iterator(client, pattern):
             if overlay:
                 hwnd = win32gui.FindWindow(None, "Output Frame")
                 win32gui.SetWindowLong(hwnd, win32con.GWL_EXSTYLE, win32gui.GetWindowLong(hwnd, win32con.GWL_EXSTYLE) | win32con.WS_EX_LAYERED)  # no idea, but it goes together with transparency
-                win32gui.SetLayeredWindowAttributes(hwnd, win32api.RGB(0, 0, 0), 0, win32con.LWA_COLORKEY)  # black as transparent
+                # win32gui.SetLayeredWindowAttributes(hwnd, win32api.RGB(0, 0, 0), 0, win32con.LWA_COLORKEY)  # black as transparent
                 win32gui.SetWindowPos(hwnd, win32con.HWND_TOPMOST, 0, 0, GetSystemMetrics(0), GetSystemMetrics(1), 0)  # always on top
                 win32gui.ShowWindow(hwnd, win32con.SW_MAXIMIZE)  # maximiced
             key = cv2.waitKey(1) & 0xFF
