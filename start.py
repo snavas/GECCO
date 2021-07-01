@@ -84,7 +84,6 @@ async def custom_frame_generator(pattern):
             timestamp = time.time()
             # read frames
             colorframe = device.getcolorstream()
-            irframe = device.getirstream()
 
             colorframe = cv2.cvtColor(colorframe, cv2.COLOR_RGB2BGR) #Reading from BAG alters the color space and needs to be fixed
 
@@ -108,34 +107,37 @@ async def custom_frame_generator(pattern):
             else:
                 # TODO: derive resolution from width and height of original frame?
                 caliColorframe = cv2.warpPerspective(colorframe, transform_mat, (1280, 720))
-                caliIrframe = cv2.warpPerspective(irframe, transform_mat, (1280, 720))
+
+                frame = np.zeros(colorframe.shape, dtype='uint8')
 
                 ##################
                 # IR Annotations #
                 ##################
-                ir, point = ir_detection.detect(caliIrframe, caliColorframe)
-                # semi-permanent
-                # prev_frame.append(ir)
-                # if len(prev_frame) > 0:
-                #     for prev in prev_frame:
-                #         frame = cv2.bitwise_or(frame, prev)
-                # if len(prev_frame) > 30:
-                #     prev_frame.pop(0)
+                if (pattern.iranno):
+                    irframe = device.getirstream()
+                    caliIrframe = cv2.warpPerspective(irframe, transform_mat, (1280, 720))
+                    ir, point = ir_detection.detect(caliIrframe, caliColorframe)
+                    # semi-permanent
+                    # prev_frame.append(ir)
+                    # if len(prev_frame) > 0:
+                    #     for prev in prev_frame:
+                    #         frame = cv2.bitwise_or(frame, prev)
+                    # if len(prev_frame) > 30:
+                    #     prev_frame.pop(0)
 
-                # permanent
-                if prev_point[0] != -1 and point[0] != -1:
-                    cv2.line(prev_frame, prev_point, point, (202, 3, 252), 3)
-                prev_point = point
-                if len(prev_frame) > 0:
-                    prev_frame = cv2.bitwise_or(ir, prev_frame)
-                else:
-                    prev_frame = ir.copy()
-                frame = cv2.bitwise_or(frame, prev_frame)
+                    # permanent
+                    if prev_point[0] != -1 and point[0] != -1:
+                        cv2.line(prev_frame, prev_point, point, (202, 3, 252), 3)
+                    prev_point = point
+                    if len(prev_frame) > 0:
+                        prev_frame = cv2.bitwise_or(ir, prev_frame)
+                    else:
+                        prev_frame = ir.copy()
+                    frame = cv2.bitwise_or(frame, prev_frame)
 
                 ########################
                 # Hand Detection       #
                 ########################
-                frame = np.zeros(colorframe.shape, dtype='uint8')
                 # hands, lower_color, upper_color = hand_lib.getHand(caliColorframe, colorframe, colorspace,
                 #                                                   pattern.edges,
                 #                                                   lower_color, upper_color)
@@ -288,6 +290,7 @@ def getOptions(args=sys.argv[1:]):
                         help="choose the colorspace for color segmentation. Popular choice is 'hsv' but we achieved best results with 'lab'",
                         choices=['hsv', 'lab', 'ycrcb', 'rgb', 'luv', 'xyz', 'hls', 'yuv'], default='lab')
     parser.add_argument("-v", "--verbose", dest='logging', action='store_true', help="enable vidgear logging")
+    parser.add_argument("-ia", "--iranno", dest='iranno', action='store_true', help="enable making annotations using IR light")
     options = parser.parse_args(args)
     return options
 
