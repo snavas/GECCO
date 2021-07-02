@@ -53,7 +53,7 @@ class RealSense(Device):
             # Tell config that we will use a recorded device from filem to be used by the pipeline through playback.
             rs.config.enable_device_from_file(config, id)
             config.enable_stream(rs.stream.color, 1280, 720, rs.format.rgb8, 30)
-            config.enable_stream(rs.stream.infrared, 1280, 720)
+            config.enable_stream(rs.stream.infrared, 1, 1280, 720)
             config.enable_stream(rs.stream.depth, 1280, 720, rs.format.z16, 30)
 
         # Start streaming
@@ -83,7 +83,7 @@ class RealSense(Device):
         # Create an align object
         # rs.align allows us to perform alignment of depth frames to others frames
         # The "align_to" is the stream type to which we plan to align depth frames.
-        align_to = rs.stream.color
+        align_to = rs.stream.depth
         self.align = rs.align(align_to)
 
     def getdepthscale(self):
