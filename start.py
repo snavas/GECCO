@@ -40,7 +40,8 @@ eps = 30
 
 handsMP = mp_hands.Hands(
     min_detection_confidence=min_detection_confidence,
-    min_tracking_confidence=min_tracking_confidence)
+    min_tracking_confidence=min_tracking_confidence,
+    max_num_hands=4)
 
 colorspacedict = {
     "hsv": cv2.COLOR_BGR2HSV,

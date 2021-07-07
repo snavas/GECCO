@@ -13,6 +13,9 @@ class RealSense(Device):
     def getdepthintrinsics(self):
         return self.depth_intr
 
+    def getirintrinsics(self):
+        return self.ir_intr
+
     # overriding abstract method
     def __init__(self, id):
         ctx = rs.context()
@@ -32,7 +35,7 @@ class RealSense(Device):
             print("<*> Using device: ", id)
             config.enable_device(id)
             config.enable_stream(rs.stream.depth, 1280, 720, rs.format.z16, 30)
-            config.enable_stream(rs.stream.infrared, 1280, 720)
+            config.enable_stream(rs.stream.infrared, 1, 1280, 720)
             config.enable_stream(rs.stream.color, 1280, 720, rs.format.bgr8, 30)
             #for sensor in devices[0].query_sensors():
             #    print(sensor)
@@ -60,6 +63,7 @@ class RealSense(Device):
         profile = self.pipeline.start(config)
         self.color_intr = profile.get_stream(rs.stream.color).as_video_stream_profile().get_intrinsics()
         self.depth_intr = profile.get_stream(rs.stream.depth).as_video_stream_profile().get_intrinsics()
+        self.ir_intr = profile.get_stream(rs.stream.infrared).as_video_stream_profile().get_intrinsics()
 
         # Getting the depth sensor's depth scale (see rs-align example for explanation)
         depth_sensor = profile.get_device().first_depth_sensor()
