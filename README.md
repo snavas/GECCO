@@ -80,7 +80,9 @@ python start.py -s -f file.bag
 python start.py -s -w -f ir_drawing.bag
 ```
 <div align="center">
+  
 ![IRpen](https://user-images.githubusercontent.com/9846759/124916746-4bff4680-dff3-11eb-805c-2c3cf2d9803b.png)
+  
 </div>
 
 ## Known Issues
