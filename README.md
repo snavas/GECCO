@@ -88,6 +88,8 @@ python start.py -s -w -f ir_drawing.bag
 
 ## Known Issues
 
+- [Intel Realsense Error 5000](https://github.com/IntelRealSense/librealsense/issues/9270)
+
 ## Modalities
 
 GECCO is designed to support gestural-enabled remote collaboration and communication in two different modalities: traditional paper media and "modern" tabletop (touch) displays. Both modalities require a depth camera, such as Intel Real Sense, positioned on top of the representation media workspace.
