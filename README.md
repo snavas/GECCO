@@ -53,6 +53,7 @@ cd GECCO
 | -i   | --invisible  | -            |```False```| Gestures are not displayed. Only hand data is logged                                   |
 | -c   | --colorspace | ```['hsv', 'lab', 'ycrcb', 'rgb', 'luv', 'xyz', 'hls', 'yuv']``` | ```'lab'``` | Colorspace used  for color segmentation. Popular choice is 'hsv' but we achieved best results with 'lab' |
 | -v   | --verbose    | -            | -       | Enable vidgear logging and visualize position of fingers and hand center                 |
+| -w   | --drawing    | -            | -       | Enable IR drawing                 |
 
 
 ### Example: Peer Mode
