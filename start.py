@@ -33,6 +33,8 @@ overlay = True
 DeviceSrc = "0"
 finish = False
 
+irframe = np.array([])
+
 min_detection_confidence = 0.35
 min_tracking_confidence = 0.3
 min_samples = 3
@@ -73,6 +75,8 @@ async def custom_frame_generator(pattern):
         prev_frame = []
         prev_point = (-1,-1)
 
+        global irframe
+
         global finish
 
         # loop over stream until its terminated
@@ -87,6 +91,7 @@ async def custom_frame_generator(pattern):
             colorframe = device.getcolorstream()
 
             colorframe = cv2.cvtColor(colorframe, cv2.COLOR_RGB2BGR) #Reading from BAG alters the color space and needs to be fixed
+            irframe = np.zeros(colorframe.shape, dtype='uint8')
 
             # check if frame empty
             if colorframe is None:
@@ -135,6 +140,7 @@ async def custom_frame_generator(pattern):
                     else:
                         prev_frame = ir.copy()
                     frame = cv2.bitwise_or(frame, prev_frame)
+                irframe = frame.copy()
 
                 ########################
                 # Hand Detection       #
@@ -210,7 +216,7 @@ async def custom_frame_generator(pattern):
                 #             frame, hand_landmarks, mp_hands.HAND_CONNECTIONS)
             # frame = reducer(frame, percentage=40)  # reduce frame by 40%
             # to measure time to completion
-            # print(time.time() - timestamp)
+            print(time.time() - timestamp)
             yield frame
             # sleep for sometime
             await asyncio.sleep(0.00001)
@@ -233,20 +239,27 @@ async def client_iterator(client, pattern):
         cv2.namedWindow("Output Frame", cv2.WND_PROP_FULLSCREEN)
         cv2.setWindowProperty("Output Frame", cv2.WND_PROP_FULLSCREEN, cv2.WINDOW_FULLSCREEN)
     async for frame in client.recv_generator():
-        if not pattern.invisible:
-            # do something with received frames here
-            # print("frame recieved")
-            # Show output window
-            cv2.imshow("Output Frame", frame)
-            if overlay:
-                hwnd = win32gui.FindWindow(None, "Output Frame")
-                win32gui.SetWindowLong(hwnd, win32con.GWL_EXSTYLE, win32gui.GetWindowLong(hwnd, win32con.GWL_EXSTYLE) | win32con.WS_EX_LAYERED)  # no idea, but it goes together with transparency
-                win32gui.SetLayeredWindowAttributes(hwnd, win32api.RGB(0, 0, 0), 0, win32con.LWA_COLORKEY)  # black as transparent
-                win32gui.SetWindowPos(hwnd, win32con.HWND_TOPMOST, 0, 0, GetSystemMetrics(0), GetSystemMetrics(1), 0)  # always on top
-                win32gui.ShowWindow(hwnd, win32con.SW_MAXIMIZE)  # maximiced
-            key = cv2.waitKey(1) & 0xFF
-            # await before continuing
-        await asyncio.sleep(0.00001)
+        try:
+            if not pattern.invisible:
+                # do something with received frames here
+                # print("frame recieved")
+                # Show output window
+                global irframe
+                if irframe.shape != (0,):
+                    frame = frame.astype("uint8")
+                    frame = cv2.bitwise_or(frame, irframe)
+                cv2.imshow("Output Frame", frame)
+                if overlay:
+                    hwnd = win32gui.FindWindow(None, "Output Frame")
+                    win32gui.SetWindowLong(hwnd, win32con.GWL_EXSTYLE, win32gui.GetWindowLong(hwnd, win32con.GWL_EXSTYLE) | win32con.WS_EX_LAYERED)  # no idea, but it goes together with transparency
+                    win32gui.SetLayeredWindowAttributes(hwnd, win32api.RGB(0, 0, 0), 0, win32con.LWA_COLORKEY)  # black as transparent
+                    win32gui.SetWindowPos(hwnd, win32con.HWND_TOPMOST, 0, 0, GetSystemMetrics(0), GetSystemMetrics(1), 0)  # always on top
+                    win32gui.ShowWindow(hwnd, win32con.SW_MAXIMIZE)  # maximiced
+                key = cv2.waitKey(1) & 0xFF
+                # await before continuing
+            await asyncio.sleep(0.00001)
+        except Exception as e:
+            print(e)
 
 async def netgear_async_playback(pattern):
     try:
