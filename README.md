@@ -79,7 +79,7 @@ python start.py -s -f file.bag
 ```
 python start.py -s -w -f ir_drawing.bag
 ```
-![image](https://user-images.githubusercontent.com/9846759/124907494-86afb180-dfe8-11eb-83de-f4a7813689d9.png)
+![IRpen](https://user-images.githubusercontent.com/9846759/124916746-4bff4680-dff3-11eb-805c-2c3cf2d9803b.png)
 
 ## Known Issues
 
