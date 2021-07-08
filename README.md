@@ -93,9 +93,9 @@ GECCO is designed to support gestural-enabled remote collaboration and communica
 
 In this modality, GECCO is intended to be used over a pair of tabletop touch displays. GECCO will act just as an overlay running on top of any software being used in the machine. For example, any mapping system, GIS system, or even an internet browser.
 
-<div align="center">
+
 ![touchdisplay](https://user-images.githubusercontent.com/9846759/124916994-954f9600-dff3-11eb-98ad-a110439c4de9.png)
-</div>
+
 
 ### Projected over a paper plan
 
