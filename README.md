@@ -79,7 +79,9 @@ python start.py -s -f file.bag
 ```
 python start.py -s -w -f ir_drawing.bag
 ```
+<div align="center">
 ![IRpen](https://user-images.githubusercontent.com/9846759/124916746-4bff4680-dff3-11eb-805c-2c3cf2d9803b.png)
+</div>
 
 ## Known Issues
 
@@ -91,7 +93,9 @@ GECCO is designed to support gestural-enabled remote collaboration and communica
 
 In this modality, GECCO is intended to be used over a pair of tabletop touch displays. GECCO will act just as an overlay running on top of any software being used in the machine. For example, any mapping system, GIS system, or even an internet browser.
 
-![image1](https://user-images.githubusercontent.com/9846759/124914559-caa6b480-dff0-11eb-8ad1-9358bf52aff3.png)
+<div align="center">
+![touchdisplay](https://user-images.githubusercontent.com/9846759/124916994-954f9600-dff3-11eb-98ad-a110439c4de9.png)
+</div>
 
 ### Projected over a paper plan
 
