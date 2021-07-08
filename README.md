@@ -6,13 +6,14 @@
   **Gesture-Enabled Remote Communication and Collaboration** 
   
   ![Demo2](media/example_skin.gif)
-  <br>
-  [longer demo video](https://snavas.github.io/img/2021-03-24%2013-31-11-1.mp4) · [debug view](https://snavas.github.io/img/ezgif-4-2da419ef8f6e.gif)
 
 </div>
 
 This project aims to develop a system for enabling hand gestures in a remote collaboration scenario, with a special focus on architectural design and urban planing. GECCO is a Python port of the [DCOMM system](https://github.com/snavas/DCOMM).
 
+## Description
+
+The GECCO prototype consists of two twin tabletop systems equipped with a depth camera (Intel RealSense). The system uses the camera together with Computer Vision algorithms to recognise and capture hand gestures, transmits those gestures to the other twin system, and then display those hand gestures on the other end table, augmenting the physical space.
 
 ## Requirements
 - [pyrealsense2](https://github.com/IntelRealSense/librealsense/tree/master/wrappers/python)
@@ -30,13 +31,11 @@ All dependencies are listed in the ```requirements.txt``` and can be installed f
 
 ```pip install -r requirements.txt ```
 
-
 ## Installation
 ```
 git clone https://github.com/snavas/GECCO.git
 cd GECCO
 ```
-
 ## Use
 
 ### Arguments
@@ -54,6 +53,7 @@ cd GECCO
 | -i   | --invisible  | -            |```False```| Gestures are not displayed. Only hand data is logged                                   |
 | -c   | --colorspace | ```['hsv', 'lab', 'ycrcb', 'rgb', 'luv', 'xyz', 'hls', 'yuv']``` | ```'lab'``` | Colorspace used  for color segmentation. Popular choice is 'hsv' but we achieved best results with 'lab' |
 | -v   | --verbose    | -            | -       | Enable vidgear logging and visualize position of fingers and hand center                 |
+| -w   | --drawing    | -            |```False```| Enable IR drawing                 |
 
 
 ### Example: Peer Mode
@@ -75,19 +75,54 @@ The following example is very useful for testing GECCO in your own local compute
 ```
 python start.py -s -f file.bag
 ```
+### Example: Infrared drawing
+```
+python start.py -s -w -f ir_drawing.bag
+```
+
+<div align="center">
+  
+![IRpen](https://user-images.githubusercontent.com/9846759/124916746-4bff4680-dff3-11eb-805c-2c3cf2d9803b.png)
+  
+</div>
+
 ## Known Issues
 
-## Description
+- [Intel Realsense Error 5000](https://github.com/IntelRealSense/librealsense/issues/9270)
 
-This prototype consists of two twin tabletop systems with a depth camera and a projector attached to them. The system uses the depth camera (Intel RealSense) together with Computer Vision algorithms to recognise and capture hand gestures, transmits those gestures to the other twin system, and then projects those hand gestures on the other end table, augmenting the physical space.
+## Modalities
+
+GECCO is designed to support gestural-enabled remote collaboration and communication in two different modalities: traditional paper media and "modern" tabletop (touch) displays. Both modalities require a depth camera, such as Intel Real Sense, positioned on top of the representation media workspace.
+
+### Overlayed over a tabletop display
+
+In this modality, GECCO is intended to be used over a pair of tabletop touch displays. GECCO will act just as an overlay running on top of any software being used in the machine. For example, any mapping system, GIS system, or even an internet browser.
+
+<div align="center">
+  
+![touchdisplay](https://user-images.githubusercontent.com/9846759/124916994-954f9600-dff3-11eb-98ad-a110439c4de9.png)
+
+</div>
+  
+### Projected over a paper plan
+
+In this modality, GECCO would use a projector and mirror system to project hand gestures over a traditional paper plan. GECCO's software will display the user's hand gestures over a black background screen.
 
 <div align="center">
   
   ![Prototype](https://raw.githubusercontent.com/snavas/snavas.github.io/master/img/prototype.png)
   <br>
+  ![ezgif-2-5a3153e1f425](https://user-images.githubusercontent.com/9846759/124914772-08a3d880-dff1-11eb-949b-903a3d37e4cc.gif)
+  <br>
   _GECCO runing on a projector tabletop system. The communication partner's hand gestures are projected over a paper plan_
 
 </div>
+
+
+
+
+
+
 
 
 
