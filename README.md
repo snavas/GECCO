@@ -97,9 +97,9 @@ In this modality, GECCO would use a projector and mirror system to project hand 
   
   ![Prototype](https://raw.githubusercontent.com/snavas/snavas.github.io/master/img/prototype.png)
   <br>
-  _GECCO runing on a projector tabletop system. The communication partner's hand gestures are projected over a paper plan_
-  
   ![ezgif-2-5a3153e1f425](https://user-images.githubusercontent.com/9846759/124914772-08a3d880-dff1-11eb-949b-903a3d37e4cc.gif)
+  <br>
+  _GECCO runing on a projector tabletop system. The communication partner's hand gestures are projected over a paper plan_
 
 </div>
 
