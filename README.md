@@ -56,25 +56,26 @@ cd GECCO
 ### Example: Peer Mode
 Run following command on first PC:
 ```
-python start.py -o 5454 -a [IP of second PC] -p 5555
+python start.py -r 5454 [IP of second PC] 5555
 ```
 Run following command on second PC:
 ```
-python start.py -o 5555 -a [IP of first PC] -p 5454
+python start.py -r 5555 [IP of first PC] 5454
 ```
 
 ### Example: Standalone Mode
 ```
-python start.py -s
+python start.py
 ```
 ### Example: Standalone + reading from file
 The following example is very useful for testing GECCO in your own local computer without access to a Realsense camera. You need to download our [example .bag file](https://uni-muenster.sciebo.de/s/x6W2XDy0J4oUFNe)
 ```
-python start.py -s -f file.bag
+python start.py -f file.bag
 ```
 ### Example: Infrared drawing
+Download this [file](TODO) and try it out with the following command
 ```
-python start.py -s -w -f ir_drawing.bag
+python start.py -a -f ir_drawing.bag
 ```
 
 <div align="center">
