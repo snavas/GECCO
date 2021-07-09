@@ -40,20 +40,17 @@ cd GECCO
 
 ### Arguments
 
-| short| long         | value        | default | description                                                                              |
-| ---- | ------------ | ------------ | ------- | ---------------------------------------------------------------------------------------- |
-| -r   | --realsense  | ```string``` | -       | Realsense Device S/N                                                                     |
-| -s   | --standalone | -            | -       | Standalone mode                                                                          |
-| -o   | --host       |  ```int```   | -       | Host port number                                                                         |
-| -a   | --address    | ```string``` | -       | Peer IP address                                                                          |
-| -p   | --port       | ```int```    | -       | Peer port number                                                                         |
-| -f   | --file       | ```string``` | -       | Path to .bag-file to simulate camera. (Does not work if camera is still connected!)      |
-| -d   | --depth      | -            | -       | Dont use depth image to increase performance                                             |
-| -e   | --edges      | -            | -       | only visualize the edges of a hand                                                       |
+| short| long         | value        | default   | description                                                                              |
+| ---- | ------------ | ------------ | --------- | ---------------------------------------------------------------------------------------- |
+| -s   | --source     | ```string``` | -         | Realsense Device S/N                                                                     |
+| -r   | --remote     | ```int``` ```string``` ```int``` | -       | Set this argument to connect to another peer. Give it the host port number, the peer IP address and the port number of the peer | |
+| -f   | --file       | ```string``` | -         | Path to .bag-file to simulate camera. (Does not work if camera is still connected!)      |
+| -d   | --depth      | -            | -         | Dont use depth image to increase performance                                             |
+| -e   | --edges      | -            | -         | only visualize the edges of a hand                                                       |
 | -i   | --invisible  | -            |```False```| Gestures are not displayed. Only hand data is logged                                   |
 | -c   | --colorspace | ```['hsv', 'lab', 'ycrcb', 'rgb', 'luv', 'xyz', 'hls', 'yuv']``` | ```'lab'``` | Colorspace used  for color segmentation. Popular choice is 'hsv' but we achieved best results with 'lab' |
-| -v   | --verbose    | -            | -       | Enable vidgear logging and visualize position of fingers and hand center                 |
-| -ia   | --iranno    | -            |```False```| Enable IR annotations and drawings                 |
+| -v   | --verbose    | -            | -         | Enable vidgear logging and visualize position of fingers and hand center                 |
+| -a   | --annotations| -            |```False```| Enable IR annotations and drawings                 |
 
 
 ### Example: Peer Mode

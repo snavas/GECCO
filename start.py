@@ -291,20 +291,19 @@ async def netgear_async_playback(pattern):
 
 def getOptions(args=sys.argv[1:]):
     parser = argparse.ArgumentParser(description="GECCO")
-    parser.add_argument("-r", "--realsense", help="Realsense device S/N")
-    parser.add_argument("-s", "--standalone", help="Standalone Mode", action='store_true')
-    parser.add_argument("-o", "--host", type=int, help="Host port number")
-    parser.add_argument("-a", "--address", help="Peer IP address")
-    parser.add_argument("-p", "--port", type=int, help="Peer port number")
+    parser.add_argument("-s", "--source", help="Realsense device S/N")
+    parser.add_argument('-r', '--remote', nargs='+',
+                        help='Set this argument to connect to another peer. '
+                             'Give it the host port number, the peer IP address and the port number of the peer')
     parser.add_argument("-f", "--file", help="Simulate camera sensor from .bag file")
     parser.add_argument("-d", "--depth", help="Don't use depth camera (faster)", action='store_false')
-    parser.add_argument("-i", "--invisible", help="Gestures are not displayed. Only hand data is logged.", action='store_true')
+    parser.add_argument("-i", "--invisible", help="Nothing is displayed. Only hand data is logged.", action='store_true')
     parser.add_argument("-e", "--edges", help="Only visualize the edges of a hand", action='store_true')
     parser.add_argument("-c", "--colorspace",
                         help="choose the colorspace for color segmentation. Popular choice is 'hsv' but we achieved best results with 'lab'",
                         choices=['hsv', 'lab', 'ycrcb', 'rgb', 'luv', 'xyz', 'hls', 'yuv'], default='lab')
     parser.add_argument("-v", "--verbose", dest='logging', action='store_true', help="enable vidgear logging")
-    parser.add_argument("-ia", "--iranno", dest='iranno', action='store_true', help="enable making annotations using IR light")
+    parser.add_argument("-a", "--annotations", dest='iranno', action='store_true', help="enable making annotations using IR light")
     options = parser.parse_args(args)
     return options
 
@@ -357,19 +356,16 @@ def tkinterGui():
 
 if __name__ == '__main__':
     options = getOptions(sys.argv[1:])
-    DeviceSrc = options.realsense
+    DeviceSrc = options.source
     # configure network
-    if options.standalone:
+    if options.remote:
+        HostPort = options.remote[0]
+        PeerAddress = options.remote[1]
+        PeerPort = options.remote[2]
+    else:
         HostPort = 5555
         PeerAddress = "localhost"
         PeerPort = 5555
-    else:
-        if options.host:
-            HostPort = options.host
-        if options.address:
-            PeerAddress = options.address
-        if options.port:
-            PeerPort = options.port
 
     # configure Realsense device
     if options.file:
