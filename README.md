@@ -73,7 +73,7 @@ The following example is very useful for testing GECCO in your own local compute
 python start.py -f file.bag
 ```
 ### Example: Infrared drawing
-Download this [file](TODO) and try it out with the following command
+Download this [file](https://uni-muenster.sciebo.de/s/r3PaJG2CE3F9L04) and try it out with the following command
 ```
 python start.py -a -f ir_drawing.bag
 ```
