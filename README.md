@@ -75,7 +75,7 @@ python start.py -f file.bag
 ### Example: Infrared drawing
 Download this [file](https://uni-muenster.sciebo.de/s/r3PaJG2CE3F9L04) and try it out with the following command
 ```
-python start.py -a -f ir_drawing.bag
+python start.py -s -ia -f paper_skin_anno.bag
 ```
 
 <div align="center">
