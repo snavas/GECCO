@@ -108,7 +108,7 @@ In this modality, GECCO would use a projector and mirror system to project hand 
 
 <div align="center">
   
-  ![Prototype](https://raw.githubusercontent.com/snavas/snavas.github.io/master/img/prototype.png)
+  ![prototype](https://user-images.githubusercontent.com/9846759/125419157-3c85e2a1-d8d5-4678-9e29-9e18797b0cd0.png)
   <br>
   ![ezgif-2-5a3153e1f425](https://user-images.githubusercontent.com/9846759/124914772-08a3d880-dff1-11eb-949b-903a3d37e4cc.gif)
   <br>
