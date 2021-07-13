@@ -80,7 +80,7 @@ python start.py -a -f ir_drawing.bag
 
 <div align="center">
   
-![IRpen](https://user-images.githubusercontent.com/9846759/124916746-4bff4680-dff3-11eb-805c-2c3cf2d9803b.png)
+![ezgif-3-bda81738d3a5](https://user-images.githubusercontent.com/9846759/125416534-966a2da3-edb9-44db-a1fb-2f973f8a8267.gif)
   
 </div>
 
