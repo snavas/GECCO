@@ -17,7 +17,7 @@ class RealSense(Device):
         return self.ir_intr
 
     # overriding abstract method
-    def __init__(self, id):
+    def __init__(self, id, ir):
         ctx = rs.context()
         devices = ctx.query_devices()
         print("<*> Connected devices: ")
@@ -34,9 +34,6 @@ class RealSense(Device):
         if len(devices) > 0:
             print("<*> Using device: ", id)
             config.enable_device(id)
-            config.enable_stream(rs.stream.depth, 1280, 720, rs.format.z16, 30)
-            config.enable_stream(rs.stream.infrared, 1, 1280, 720)
-            config.enable_stream(rs.stream.color, 1280, 720, rs.format.bgr8, 30)
             #for sensor in devices[0].query_sensors():
             #    print(sensor)
             #if "D415" in str(devices[0]):
@@ -55,15 +52,18 @@ class RealSense(Device):
             print("<*> Realsense device not found, loading: ", id)
             # Tell config that we will use a recorded device from filem to be used by the pipeline through playback.
             rs.config.enable_device_from_file(config, id)
-            config.enable_stream(rs.stream.color, 1280, 720, rs.format.rgb8, 30)
-            config.enable_stream(rs.stream.infrared, 1, 1280, 720)
-            config.enable_stream(rs.stream.depth, 1280, 720, rs.format.z16, 30)
+        config.enable_stream(rs.stream.depth, 1280, 720, rs.format.z16, 30)
+        config.enable_stream(rs.stream.color, 1280, 720, rs.format.rgb8, 30)
+        if ir:
+            config.enable_stream(rs.stream.infrared, 1280, 720)
 
         # Start streaming
         profile = self.pipeline.start(config)
         self.color_intr = profile.get_stream(rs.stream.color).as_video_stream_profile().get_intrinsics()
         self.depth_intr = profile.get_stream(rs.stream.depth).as_video_stream_profile().get_intrinsics()
-        self.ir_intr = profile.get_stream(rs.stream.infrared).as_video_stream_profile().get_intrinsics()
+
+        if ir:
+            self.ir_intr = profile.get_stream(rs.stream.infrared).as_video_stream_profile().get_intrinsics()
 
         # Getting the depth sensor's depth scale (see rs-align example for explanation)
         depth_sensor = profile.get_device().first_depth_sensor()
@@ -87,7 +87,10 @@ class RealSense(Device):
         # Create an align object
         # rs.align allows us to perform alignment of depth frames to others frames
         # The "align_to" is the stream type to which we plan to align depth frames.
-        align_to = rs.stream.depth
+        if ir:
+            align_to = rs.stream.depth
+        else:
+            align_to = rs.stream.color
         self.align = rs.align(align_to)
 
     def getdepthscale(self):
