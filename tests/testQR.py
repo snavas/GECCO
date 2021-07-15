@@ -7,10 +7,11 @@ from classes.realsense import RealSense
 import copy
 import numpy as np
 import cv2
+import time
 #import screeninfo
 
 def main():
-    device = RealSense('752112070399', False)
+    device = RealSense('821212062065', False)
     #print("Color intrinsics: ", device.getcolorintrinsics())
     #print("Depth intrinsics: ", device.getdepthintrinsics())
     # Initiate QR detector
@@ -23,7 +24,9 @@ def main():
             qrCodeDetector = cv2.QRCodeDetector()
 
             # ONLY ONE QR CODE WILL BE DETECTED AND DECODED
+            timestamp = time.time()
             decoded_info, points, _ = qrCodeDetector.detectAndDecode(image)
+            print(time.time() - timestamp)
 
             # MULTIPLE QR CODES WILL BE DETECTED AND DECODED (PERFORMANCE IS WORSE)
             #retval, decoded_info, points, straight_qrcode = qrCodeDetector.detectAndDecodeMulti(image)

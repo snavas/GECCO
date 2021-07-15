@@ -79,6 +79,10 @@ async def custom_frame_generator(pattern):
         colorspace = colorspacedict[pattern.colorspace]
         prev_frame = []
         prev_point = (-1, -1)
+        eraser = np.array([[[0, 0],
+        [0, 0],
+        [0, 0],
+        [0, 0]]], dtype='uint8')
 
         global irframe
 
@@ -116,19 +120,27 @@ async def custom_frame_generator(pattern):
                 # frame = reducer(frame, percentage=40)  # reduce frame by 40%
 
             else:
+
                 # TODO: derive resolution from width and height of original frame?
                 caliColorframe = cv2.warpPerspective(colorframe, transform_mat, (1280, 720))
 
                 frame = np.zeros(colorframe.shape, dtype='uint8')
 
-
-
-                ##################
-                # IR Annotations #
-                ##################
+                ##########################
+                # IR Annotations + Hands #
+                ##########################
                 if (pattern.iranno):
+                    marker_found = False
+                    gray = cv2.cvtColor(caliColorframe, cv2.COLOR_BGR2GRAY)
+                    aruco_dict = aruco.Dictionary_get(aruco.DICT_4X4_250)
+                    parameters = aruco.DetectorParameters_create()
+                    corners, ids, rejectedImgPoints = aruco.detectMarkers(gray, aruco_dict, parameters=parameters)
+                    if ids is not None:
+                        for i in range(len(ids)):
+                            if ids[i] == 7:
+                                eraser = corners[i][0].astype('int32')
                     with concurrent.futures.ThreadPoolExecutor() as executor:
-                        ir_future = executor.submit(ir_annotations, frame, caliColorframe, device, transform_mat, prev_point, prev_frame)
+                        ir_future = executor.submit(ir_annotations, frame, caliColorframe, device, transform_mat, prev_point, prev_frame, eraser)
                         hand_future = executor.submit(hand_detection,
                                                  frame, caliColorframe, colorspace, pattern.edges, lower_color,
                                                  upper_color, handsMP, log,
@@ -136,6 +148,9 @@ async def custom_frame_generator(pattern):
                                                  transform_mat)
                         frame = hand_future.result()
                         irframe, prev_frame, prev_point = ir_future.result()
+                ##############
+                # Just Hands #
+                ##############
                 else:
                     frame = hand_detection(frame, caliColorframe, colorspace, pattern.edges, lower_color, upper_color, handsMP, log,
                                tabledistance, pattern.logging, pattern.depth, timestamp, device, transform_mat)
@@ -164,23 +179,18 @@ async def custom_frame_generator(pattern):
         device.stop()
 
 
-def ir_annotations(frame, caliColorframe, device, transform_mat, prev_point, prev_frame):
-    markerFound = False
-    gray = cv2.cvtColor(caliColorframe, cv2.COLOR_BGR2GRAY)
-    aruco_dict = aruco.Dictionary_get(aruco.DICT_4X4_250)
-    parameters = aruco.DetectorParameters_create()
-    corners, ids, rejectedImgPoints = aruco.detectMarkers(gray, aruco_dict, parameters=parameters)
-    if ids is not None:
-        for i in range(len(ids)):
-            if ids[i] == 7:
-                markerFound = True
-    if markerFound:
+def ir_annotations(frame, caliColorframe, device, transform_mat, prev_point, prev_frame, eraser):
+    irframe = device.getirstream()
+    caliIrframe = cv2.warpPerspective(irframe, transform_mat, (1280, 720))
+    ir, point = ir_detection.detect(caliIrframe, caliColorframe)
+    eraserX = eraser[:,:1]
+    eraserY = eraser[:, 1:]
+    if (point[0] < eraserX.max() and point[0] > eraserX.min() and point[1] < eraserY.max() and point[1] > eraserY.min()):
         prev_frame = frame.copy()
         prev_point = (-1, -1)
+        pts = eraser.reshape((-1, 1, 2))
+        cv2.polylines(frame, [pts], True, (255, 255, 255),5)
     else:
-        irframe = device.getirstream()
-        caliIrframe = cv2.warpPerspective(irframe, transform_mat, (1280, 720))
-        ir, point = ir_detection.detect(caliIrframe, caliColorframe)
         # semi-permanent
         # prev_frame.append(ir)
         # if len(prev_frame) > 0:
@@ -198,7 +208,6 @@ def ir_annotations(frame, caliColorframe, device, transform_mat, prev_point, pre
         else:
             prev_frame = ir.copy()
         frame = cv2.bitwise_or(frame, prev_frame)
-
     return cv2.bitwise_or(frame, prev_frame), prev_frame, prev_point
 
 
