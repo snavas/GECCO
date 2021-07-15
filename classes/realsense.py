@@ -93,6 +93,9 @@ class RealSense(Device):
             align_to = rs.stream.color
         self.align = rs.align(align_to)
 
+        for index in range(5):
+            self.pipeline.wait_for_frames()
+
     def getdepthscale(self):
         return self.depth_scale
 
