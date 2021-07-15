@@ -10,7 +10,7 @@ import cv2
 #import screeninfo
 
 def main():
-    device = RealSense('752112070399')
+    device = RealSense('752112070399', False)
     #print("Color intrinsics: ", device.getcolorintrinsics())
     #print("Depth intrinsics: ", device.getdepthintrinsics())
     # Initiate QR detector
@@ -18,9 +18,15 @@ def main():
 
     try:
         while True:
+
             image = device.getcolorstream()
             qrCodeDetector = cv2.QRCodeDetector()
-            decodedText, points, _ = qrCodeDetector.detectAndDecode(image)
+
+            # ONLY ONE QR CODE WILL BE DETECTED AND DECODED
+            decoded_info, points, _ = qrCodeDetector.detectAndDecode(image)
+
+            # MULTIPLE QR CODES WILL BE DETECTED AND DECODED (PERFORMANCE IS WORSE)
+            #retval, decoded_info, points, straight_qrcode = qrCodeDetector.detectAndDecodeMulti(image)
 
             if points is not None:
 
@@ -30,39 +36,16 @@ def main():
                     nextPointIndex = (i + 1) % nrOfPoints
                     cv2.line(image, tuple(points[i][0]), tuple(points[nextPointIndex][0]), (255, 0, 0), 5)
 
-                print(decodedText)
-
-                cv2.namedWindow("Output Frame", cv2.WND_PROP_FULLSCREEN)
-                cv2.setWindowProperty("Output Frame", cv2.WND_PROP_FULLSCREEN, cv2.WINDOW_NORMAL)
-                cv2.imshow('Output Frame', image)
-                cv2.waitKey(1)
+                print(decoded_info)
 
             else:
-                print("QR code not detected")
+                pass
+                #print("QR code not detected")
 
-            #print(decodedText, points)
-            # QR extraction
-            # (single) https://techtutorialsx.com/2019/12/08/python-opencv-detecting-and-decoding-a-qrcode/
-            # (multiple) https://github.com/opencv/opencv/issues/13311
-            # (tips to better detect) https://github.com/MikhailGordeev/QR-Code-Extractor
-            #codes, image2 = reader.extract(image2)
-            #if codes is not None:
-            #    print("start")
-            #    print(codes)
-            #    print("end")
-            #if (qrCodeDetector.detectMulti(image2, points)):
-            #    print(points)
-            # decodedText, points, _ = qrCodeDetector.detectAndDecode(image2)
-            # if points is not None:
-            #    nrOfPoints = len(points)
-            #    for i in range(nrOfPoints):
-            #        nextPointIndex = (i + 1) % nrOfPoints
-            #        cv2.line(image2, tuple(points[i][0]), tuple(points[nextPointIndex][0]), (255, 0, 0), 5)
-                #print(decodedText, points)
-            #else:
-            #    print("QR code not detected")
-            # Show images
-            #cv2.namedWindow('RealSense', cv2.WINDOW_AUTOSIZE)
+            cv2.namedWindow("Output Frame", cv2.WND_PROP_FULLSCREEN)
+            cv2.setWindowProperty("Output Frame", cv2.WND_PROP_FULLSCREEN, cv2.WINDOW_NORMAL)
+            cv2.imshow('Output Frame', image)
+            cv2.waitKey(1)
 
     finally:
         # Stop streaming
