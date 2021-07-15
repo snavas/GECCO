@@ -66,7 +66,7 @@ async def custom_frame_generator(pattern):
     try:
         tabledistance = 1200  # Default distance to table
         # Open video stream
-        device = RealSense(DeviceSrc)
+        device = RealSense(DeviceSrc, pattern.iranno)
         # open log file and write header
         log = open("logs/log_" + str(int(time.time())) + ".log", "x")
         log.write("timestamp height class x y" + "\n")
@@ -95,8 +95,6 @@ async def custom_frame_generator(pattern):
             # read frames
             colorframe = device.getcolorstream()
 
-            colorframe = cv2.cvtColor(colorframe,
-                                      cv2.COLOR_RGB2BGR)  # Reading from BAG alters the color space and needs to be fixed
             irframe = np.zeros(colorframe.shape, dtype='uint8')
 
             # check if frame empty
@@ -116,11 +114,6 @@ async def custom_frame_generator(pattern):
                         if tabledistance == 0:
                             tabledistance = 1200
                 # frame = reducer(frame, percentage=40)  # reduce frame by 40%
-                # to measure time to completion
-                print(time.time() - timestamp)
-                yield frame
-                # sleep for sometime
-                await asyncio.sleep(0.00001)
 
             else:
                 # TODO: derive resolution from width and height of original frame?
@@ -146,7 +139,6 @@ async def custom_frame_generator(pattern):
                 else:
                     frame = hand_detection(frame, caliColorframe, colorspace, pattern.edges, lower_color, upper_color, handsMP, log,
                                tabledistance, pattern.logging, pattern.depth, timestamp, device, transform_mat)
-                yield frame
                 ##### Mediapipe: visualize detections ###########
                 # resultsMP = handsMP.process(caliColorframe)
                 # if resultsMP.multi_hand_landmarks:
@@ -154,6 +146,9 @@ async def custom_frame_generator(pattern):
                 #     for hand_landmarks in resultsMP.multi_hand_landmarks:
                 #         mp_drawing.draw_landmarks(
                 #             frame, hand_landmarks, mp_hands.HAND_CONNECTIONS)
+            # to measure time to completion
+            print(time.time() - timestamp)
+            yield frame
             # sleep for sometime
             await asyncio.sleep(0.00001)
         # close stream
