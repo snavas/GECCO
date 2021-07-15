@@ -43,3 +43,4 @@ websocket-client==0.57.0
 wincertstore==0.2
 yarl==1.6.3
 youtube-dl==2021.2.4.1
+mediapipe==0.8.6
