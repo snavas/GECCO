@@ -47,10 +47,11 @@ cd GECCO
 | -f   | --file       | ```string``` | -         | Path to .bag-file to simulate camera. (Does not work if camera is still connected!)      |
 | -d   | --depth      | -            | -         | Dont use depth image to increase performance                                             |
 | -e   | --edges      | -            | -         | only visualize the edges of a hand                                                       |
-| -i   | --invisible  | -            |```False```| Gestures are not displayed. Only hand data is logged                                   |
+| -i   | --invisible  | -            |```False```| Gestures are not displayed. Only hand data is logged                                     |
 | -c   | --colorspace | ```['hsv', 'lab', 'ycrcb', 'rgb', 'luv', 'xyz', 'hls', 'yuv']``` | ```'lab'``` | Colorspace used  for color segmentation. Popular choice is 'hsv' but we achieved best results with 'lab' |
 | -v   | --verbose    | -            | -         | Enable vidgear logging and visualize position of fingers and hand center                 |
-| -a   | --annotations| -            |```False```| Enable IR annotations and drawings                 |
+| -a   | --annotations| -            |```False```| Enable IR annotations and drawings                                                       |
+| -p   | --paper      | -            |```False```| Switch to paper plan mode                                                                |
 
 
 ### Example: Peer Mode
