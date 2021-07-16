@@ -370,11 +370,12 @@ async def client_iterator(client, pattern):
                     hwnd = win32gui.FindWindow(None, "Output Frame")
                     win32gui.SetWindowLong(hwnd, win32con.GWL_EXSTYLE, win32gui.GetWindowLong(hwnd,
                                                                                               win32con.GWL_EXSTYLE) | win32con.WS_EX_LAYERED)  # no idea, but it goes together with transparency
-                    # win32gui.SetLayeredWindowAttributes(hwnd, win32api.RGB(0, 0, 0), 0,
-                    #                                     win32con.LWA_COLORKEY)  # black as transparent
                     win32gui.SetWindowPos(hwnd, win32con.HWND_TOPMOST, 0, 0, GetSystemMetrics(0), GetSystemMetrics(1),
                                           0)  # always on top
                     win32gui.ShowWindow(hwnd, win32con.SW_MAXIMIZE)  # maximiced
+                    if pattern.paper == False:
+                        win32gui.SetLayeredWindowAttributes(hwnd, win32api.RGB(0, 0, 0), 0,
+                                                            win32con.LWA_COLORKEY)  # black as transparent
                 key = cv2.waitKey(1) & 0xFF
                 # await before continuing
             await asyncio.sleep(0.00001)
@@ -428,6 +429,8 @@ def getOptions(args=sys.argv[1:]):
     parser.add_argument("-v", "--verbose", dest='logging', action='store_true', help="enable vidgear logging")
     parser.add_argument("-a", "--annotations", dest='iranno', action='store_true',
                         help="enable making annotations using IR light")
+    parser.add_argument("-p", "--paper", dest='paper', action='store_true',
+                        help="switch to paper plan mode")
     options = parser.parse_args(args)
     return options
 
