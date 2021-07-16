@@ -63,7 +63,7 @@ colorspace_dict = {
 tui_dict = {
     7: {
         "color": (0,0,0),
-        "thickness": 35,
+        "thickness": 30,
         "edges": np.array([[[0, 0],
         [0, 0],
         [0, 0],
@@ -71,7 +71,7 @@ tui_dict = {
     }, # eraser
     1: {
         "color": (255, 255, 255),
-        "thickness": 3,
+        "thickness": 2,
         "edges": np.array([[[0, 0],
         [0, 0],
         [0, 0],
@@ -79,7 +79,7 @@ tui_dict = {
     }, # black pen
     2: {
         "color": (200, 3, 3),
-        "thickness": 3,
+        "thickness": 2,
         "edges": np.array([[[0, 0],
         [0, 0],
         [0, 0],
@@ -87,7 +87,7 @@ tui_dict = {
     },
     3: {
         "color": (200, 200, 3),
-        "thickness": 3,
+        "thickness": 2,
         "edges": np.array([[[0, 0],
         [0, 0],
         [0, 0],
@@ -95,7 +95,7 @@ tui_dict = {
     },
     4: {
         "color": (3, 3, 200),
-        "thickness": 3,
+        "thickness": 2,
         "edges": np.array([[[0, 0],
         [0, 0],
         [0, 0],
@@ -103,7 +103,7 @@ tui_dict = {
     },
     5: {
         "color": (200, 3, 200),
-        "thickness": 3,
+        "thickness": 2,
         "edges": np.array([[[0, 0],
         [0, 0],
         [0, 0],
@@ -111,7 +111,7 @@ tui_dict = {
     },
     6: {
         "color": (3, 200, 200),
-        "thickness": 3,
+        "thickness": 2,
         "edges": np.array([[[0, 0],
         [0, 0],
         [0, 0],
@@ -176,9 +176,6 @@ async def custom_frame_generator(pattern):
 
             else:
 
-                # TODO: derive resolution from width and height of original frame?
-                caliColorframe = cv2.warpPerspective(colorframe, transform_mat, (1280, 720))
-
                 frame = np.zeros(colorframe.shape, dtype='uint8')
 
                 ##########################
@@ -186,7 +183,7 @@ async def custom_frame_generator(pattern):
                 ##########################
                 if (pattern.iranno):
                     # look for aruco codes
-                    gray = cv2.cvtColor(caliColorframe, cv2.COLOR_BGR2GRAY)
+                    gray = cv2.cvtColor(colorframe, cv2.COLOR_BGR2GRAY)
                     aruco_dict = aruco.Dictionary_get(aruco.DICT_4X4_250)
                     parameters = aruco.DetectorParameters_create()
                     corners, ids, rejectedImgPoints = aruco.detectMarkers(gray, aruco_dict, parameters=parameters)
@@ -197,19 +194,21 @@ async def custom_frame_generator(pattern):
                                     tui_dict[key]["edges"] = corners[i][0].astype('int32')
                     # simultaniously detect hands and do the ir drawings
                     with concurrent.futures.ThreadPoolExecutor() as executor:
-                        ir_future = executor.submit(ir_annotations, frame, caliColorframe, device, transform_mat, prev_point, prev_frame, current_tui_setting)
+                        ir_future = executor.submit(ir_annotations, frame, colorframe, device, transform_mat, prev_point, prev_frame, current_tui_setting)
                         hand_future = executor.submit(hand_detection,
-                                                 frame, caliColorframe, colorspace, pattern.edges, lower_color,
+                                                 frame, colorframe, colorspace, pattern.edges, lower_color,
                                                  upper_color, handsMP, log,
                                                  tabledistance, pattern.logging, pattern.depth, timestamp, device,
                                                  transform_mat)
                         frame = hand_future.result()
                         irframe, prev_frame, prev_point, current_tui_setting = ir_future.result()
+                        frame = cv2.bitwise_or(frame, irframe)
+                        irframe = cv2.warpPerspective(irframe, transform_mat, (1280, 720))
                 ##############
                 # Just Hands #
                 ##############
                 else:
-                    frame = hand_detection(frame, caliColorframe, colorspace, pattern.edges, lower_color, upper_color, handsMP, log,
+                    frame = hand_detection(frame, colorframe, colorspace, pattern.edges, lower_color, upper_color, handsMP, log,
                                tabledistance, pattern.logging, pattern.depth, timestamp, device, transform_mat)
                 ##### Mediapipe: visualize detections ###########
                 # resultsMP = handsMP.process(caliColorframe)
@@ -218,6 +217,9 @@ async def custom_frame_generator(pattern):
                 #     for hand_landmarks in resultsMP.multi_hand_landmarks:
                 #         mp_drawing.draw_landmarks(
                 #             frame, hand_landmarks, mp_hands.HAND_CONNECTIONS)
+                # TODO: derive resolution from width and height of original frame?
+                frame = cv2.warpPerspective(frame, transform_mat, (1280, 720))
+
             # to measure time to completion
             print(time.time() - timestamp)
             yield frame
@@ -238,17 +240,7 @@ async def custom_frame_generator(pattern):
 
 def ir_annotations(frame, caliColorframe, device, transform_mat, prev_point, prev_frame, current_tui_setting):
     irframe = device.getirstream()
-    caliIrframe = cv2.warpPerspective(irframe, transform_mat, (1280, 720))
-    point = ir_detection.detect(caliIrframe, caliColorframe)
-    # semi-permanent
-    # prev_frame.append(ir)
-    # if len(prev_frame) > 0:
-    #     for prev in prev_frame:
-    #         frame = cv2.bitwise_or(frame, prev)
-    # if len(prev_frame) > 30:
-    #     prev_frame.pop(0)
-
-    # permanent
+    point = ir_detection.detect(irframe, caliColorframe)
     if point[0] != -1:
         for key in tui_dict.keys():
             tuiX = tui_dict[key]["edges"][:, :1]
@@ -262,7 +254,7 @@ def ir_annotations(frame, caliColorframe, device, transform_mat, prev_point, pre
                 color = current_tui_setting["color"]
                 if color == (0, 0, 0):
                     color = (10, 10, 10)
-                cv2.polylines(frame, [pts], True, color, 5)
+                cv2.polylines(frame, [pts], True, color, 3)
                 # do not draw a point or line
                 point = (-1,-1)
                 break
