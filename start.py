@@ -70,7 +70,7 @@ tui_dict = {
         [0, 0]]], dtype='uint8')
     }, # eraser
     1: {
-        "color": (255, 255, 255),
+        "color": (3, 200, 3),
         "thickness": 2,
         "edges": np.array([[[0, 0],
         [0, 0],
@@ -78,22 +78,6 @@ tui_dict = {
         [0, 0]]], dtype='uint8')
     }, # black pen
     2: {
-        "color": (200, 3, 3),
-        "thickness": 2,
-        "edges": np.array([[[0, 0],
-        [0, 0],
-        [0, 0],
-        [0, 0]]], dtype='uint8')
-    },
-    3: {
-        "color": (200, 200, 3),
-        "thickness": 2,
-        "edges": np.array([[[0, 0],
-        [0, 0],
-        [0, 0],
-        [0, 0]]], dtype='uint8')
-    },
-    4: {
         "color": (3, 3, 200),
         "thickness": 2,
         "edges": np.array([[[0, 0],
@@ -101,8 +85,24 @@ tui_dict = {
         [0, 0],
         [0, 0]]], dtype='uint8')
     },
+    3: {
+        "color": (3, 200, 200),
+        "thickness": 2,
+        "edges": np.array([[[0, 0],
+        [0, 0],
+        [0, 0],
+        [0, 0]]], dtype='uint8')
+    },
+    4: {
+        "color": (200, 3, 3),
+        "thickness": 2,
+        "edges": np.array([[[0, 0],
+        [0, 0],
+        [0, 0],
+        [0, 0]]], dtype='uint8')
+    },
     5: {
-        "color": (200, 3, 200),
+        "color": (255, 255, 255),
         "thickness": 2,
         "edges": np.array([[[0, 0],
         [0, 0],
@@ -110,7 +110,7 @@ tui_dict = {
         [0, 0]]], dtype='uint8')
     },
     6: {
-        "color": (3, 200, 200),
+        "color": (200, 3, 200),
         "thickness": 2,
         "edges": np.array([[[0, 0],
         [0, 0],
@@ -135,9 +135,9 @@ async def custom_frame_generator(pattern):
         upper_color = np.array([0, 0, 0])
         # translate colorspace to opencv code
         colorspace = colorspace_dict[pattern.colorspace]
-        prev_frame = []
+        prev_frame = np.array([])
         prev_point = (-1, -1)
-        current_tui_setting = tui_dict[1]
+        current_tui_setting = tui_dict[5]
 
         global irframe
 
@@ -241,6 +241,8 @@ async def custom_frame_generator(pattern):
 def ir_annotations(frame, caliColorframe, device, transform_mat, prev_point, prev_frame, current_tui_setting):
     irframe = device.getirstream()
     point = ir_detection.detect(irframe, caliColorframe)
+    if len(prev_frame) < 1:
+        prev_frame = np.zeros_like(frame)
     if point[0] != -1:
         for key in tui_dict.keys():
             tuiX = tui_dict[key]["edges"][:, :1]
@@ -253,8 +255,10 @@ def ir_annotations(frame, caliColorframe, device, transform_mat, prev_point, pre
                 pts = tui_dict[key]["edges"].reshape((-1, 1, 2))
                 color = current_tui_setting["color"]
                 if color == (0, 0, 0):
-                    color = (10, 10, 10)
-                cv2.polylines(frame, [pts], True, color, 3)
+                    for p in pts:
+                        cv2.circle(frame, (p[0][0], p[0][1]), 5, (255, 255, 255), -1)
+                else:
+                    cv2.polylines(frame, [pts], True, color, 3)
                 # do not draw a point or line
                 point = (-1,-1)
                 break
@@ -265,8 +269,6 @@ def ir_annotations(frame, caliColorframe, device, transform_mat, prev_point, pre
             if prev_point[0] != -1:
                 cv2.line(prev_frame, prev_point, point, color, thickness)
     prev_point = point
-    if len(prev_frame) < 1:
-        prev_frame = np.zeros_like(frame)
     frame = cv2.bitwise_or(frame, prev_frame)
     return cv2.bitwise_or(frame, prev_frame), prev_frame, prev_point, current_tui_setting
 
