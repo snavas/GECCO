@@ -1,123 +1,46 @@
 # import library
-import concurrent
-
-from vidgear.gears.asyncio import NetGear_Async
-from vidgear.gears.helper import reducer
-from classes.realsense import RealSense
-from classes.bcolors import bcolors
-import libs.hand as hand_lib
-import libs.hand_neuralNet as hand_lib_nn
-import libs.ir_detection as ir_detection
-import libs.calibration as cal
-import libs.utils as utils
-import libs.visHeight as height
-import numpy as np
-import cv2, asyncio
 import argparse
+import concurrent
 import sys
+import threading
 import time
+import tkinter as tk
+import traceback
+
+import asyncio
+import cv2
+import mediapipe as mp
+import numpy as np
 import win32api
 import win32con
 import win32gui
-from win32api import GetSystemMetrics
-import traceback
-import mediapipe as mp
-import tkinter as tk
-import threading
 from cv2 import aruco
+from vidgear.gears.asyncio import NetGear_Async
+from win32api import GetSystemMetrics
 
-mp_drawing = mp.solutions.drawing_utils
-mp_hands = mp.solutions.hands
+import libs.calibration as cal
+import libs.hand_neural_net as hand_lib_nn
+import libs.infrared as infrared
+from classes.bcolors import bcolors
+from classes.realsense import RealSense
+from dicts.colorspace_dict import colorspace_dict
+from dicts.tui_dict import tui_dict
 
-HostPort = 5555
-PeerAddress = "localhost"
-PeerPort = 5555
-continuousCalibration = False
-overlay = True
-DeviceSrc = "0"
-finish = False
-
-irframe = np.array([])
-
+# init mediapipe hand detection parameters
 min_detection_confidence = 0.35
 min_tracking_confidence = 0.3
 min_samples = 3
 eps = 30
-
+# init mediapipe
+mp_drawing = mp.solutions.drawing_utils
+mp_hands = mp.solutions.hands
 handsMP = mp_hands.Hands(
     min_detection_confidence=min_detection_confidence,
     min_tracking_confidence=min_tracking_confidence,
     max_num_hands=4)
 
-colorspace_dict = {
-    "hsv": cv2.COLOR_BGR2HSV,
-    "lab": cv2.COLOR_BGR2LAB,
-    "ycrcb": cv2.COLOR_BGR2YCrCb,
-    "rgb": cv2.COLOR_BGR2RGB,
-    "luv": cv2.COLOR_BGR2LUV,
-    "xyz": cv2.COLOR_BGR2XYZ,
-    "hls": cv2.COLOR_BGR2HLS,
-    "yuv": cv2.COLOR_BGR2YUV
-}
-
-tui_dict = {
-    7: {
-        "color": (0,0,0),
-        "thickness": 30,
-        "edges": np.array([[[0, 0],
-        [0, 0],
-        [0, 0],
-        [0, 0]]], dtype='uint8')
-    }, # eraser
-    1: {
-        "color": (3, 200, 3),
-        "thickness": 2,
-        "edges": np.array([[[0, 0],
-        [0, 0],
-        [0, 0],
-        [0, 0]]], dtype='uint8')
-    }, # black pen
-    2: {
-        "color": (3, 3, 200),
-        "thickness": 2,
-        "edges": np.array([[[0, 0],
-        [0, 0],
-        [0, 0],
-        [0, 0]]], dtype='uint8')
-    },
-    3: {
-        "color": (3, 200, 200),
-        "thickness": 2,
-        "edges": np.array([[[0, 0],
-        [0, 0],
-        [0, 0],
-        [0, 0]]], dtype='uint8')
-    },
-    4: {
-        "color": (200, 3, 3),
-        "thickness": 2,
-        "edges": np.array([[[0, 0],
-        [0, 0],
-        [0, 0],
-        [0, 0]]], dtype='uint8')
-    },
-    5: {
-        "color": (255, 255, 255),
-        "thickness": 2,
-        "edges": np.array([[[0, 0],
-        [0, 0],
-        [0, 0],
-        [0, 0]]], dtype='uint8')
-    },
-    6: {
-        "color": (200, 3, 200),
-        "thickness": 2,
-        "edges": np.array([[[0, 0],
-        [0, 0],
-        [0, 0],
-        [0, 0]]], dtype='uint8')
-    },
-}
+# init ir_frame
+irframe = np.array([])
 
 # Create a async frame generator as custom source
 async def custom_frame_generator(pattern):
@@ -135,17 +58,15 @@ async def custom_frame_generator(pattern):
         upper_color = np.array([0, 0, 0])
         # translate colorspace to opencv code
         colorspace = colorspace_dict[pattern.colorspace]
+        # init parameters
         prev_frame = np.array([])
         prev_point = (-1, -1)
         current_tui_setting = tui_dict[5]
 
-        global irframe
-
-        global finish
+        global irframe, min_samples, eps
 
         # loop over stream until its terminated
-        while not finish:
-            # print("start")
+        while True:
             ########################
             # Startup              #
             ########################
@@ -153,7 +74,7 @@ async def custom_frame_generator(pattern):
             timestamp = time.time()
             # read frames
             colorframe = device.getcolorstream()
-
+            # init the ir_frame as empty
             irframe = np.zeros(colorframe.shape, dtype='uint8')
 
             # check if frame empty
@@ -161,67 +82,71 @@ async def custom_frame_generator(pattern):
                 break
             # process frame
             ########################
-            # Calibration           #
+            # Calibration          #
             ########################
-            if continuousCalibration == False and transform_mat.size == 0:
+            if transform_mat.size == 0:
                 frame, screen_corners, target_corners = cal.calibrateViaARUco(colorframe)
+                # if all four target corners have been found create the transformation matrix
                 if len(target_corners) == 4:
                     transform_mat = cv2.getPerspectiveTransform(target_corners, screen_corners)
+                    # if depth mode is activated also read the depth frame and measure the table distance
                     if pattern.depth:
                         depthframe = device.getdepthstream()
                         tabledistance = depthframe[int(target_corners[1][1])][int(target_corners[1][0])]
                         if tabledistance == 0:
                             tabledistance = 1200
-                # frame = reducer(frame, percentage=40)  # reduce frame by 40%
-
+            # main frame processing after calibration is finished
             else:
-
+                # init the resulting frame as empty
                 frame = np.zeros(colorframe.shape, dtype='uint8')
 
                 ##########################
                 # IR Annotations + Hands #
                 ##########################
                 if (pattern.iranno):
-                    # look for aruco codes
+                    # look for aruco codes (more easily detected in black and white images)
                     gray = cv2.cvtColor(colorframe, cv2.COLOR_BGR2GRAY)
                     aruco_dict = aruco.Dictionary_get(aruco.DICT_4X4_250)
                     parameters = aruco.DetectorParameters_create()
                     corners, ids, rejectedImgPoints = aruco.detectMarkers(gray, aruco_dict, parameters=parameters)
+
+                    # if aruco codes have been found
                     if ids is not None:
                         for i in range(len(ids)): # loop through all detections
                             for key in tui_dict.keys(): # loop through all codes
+                                # save the position of the detected codes
                                 if ids[i] == key:
                                     tui_dict[key]["edges"] = corners[i][0].astype('int32')
-                    # simultaniously detect hands and do the ir drawings
+                    # simultaneously detect hands and do the ir drawings
                     with concurrent.futures.ThreadPoolExecutor() as executor:
-                        ir_future = executor.submit(ir_annotations, frame, colorframe, device, transform_mat, prev_point, prev_frame, current_tui_setting)
-                        hand_future = executor.submit(hand_detection,
+                        ir_future = executor.submit(infrared.ir_annotations, frame, colorframe, device, prev_point, prev_frame, current_tui_setting, tui_dict)
+                        hand_future = executor.submit(hand_lib_nn.hand_detection,
                                                  frame, colorframe, colorspace, pattern.edges, lower_color,
                                                  upper_color, handsMP, log,
                                                  tabledistance, pattern.logging, pattern.depth, timestamp, device,
-                                                 transform_mat)
+                                                 transform_mat, min_samples, eps)
                         frame = hand_future.result()
                         irframe, prev_frame, prev_point, current_tui_setting = ir_future.result()
                         frame = cv2.bitwise_or(frame, irframe)
-                        irframe = cv2.warpPerspective(irframe, transform_mat, (1280, 720))
+                        irframe = cv2.warpPerspective(irframe, transform_mat, irframe.shape[1:None:-1])
                 ##############
                 # Just Hands #
                 ##############
                 else:
-                    frame = hand_detection(frame, colorframe, colorspace, pattern.edges, lower_color, upper_color, handsMP, log,
-                               tabledistance, pattern.logging, pattern.depth, timestamp, device, transform_mat)
-                ##### Mediapipe: visualize detections ###########
+                    frame = hand_lib_nn.hand_detection(frame, colorframe, colorspace, pattern.edges, lower_color, upper_color, handsMP, log,
+                               tabledistance, pattern.logging, pattern.depth, timestamp, device, transform_mat, min_samples, eps)
+                ##### Mediapipe: visualize detections for debugging ###########
                 # resultsMP = handsMP.process(caliColorframe)
                 # if resultsMP.multi_hand_landmarks:
                 #     frame.flags.writeable = True
                 #     for hand_landmarks in resultsMP.multi_hand_landmarks:
                 #         mp_drawing.draw_landmarks(
                 #             frame, hand_landmarks, mp_hands.HAND_CONNECTIONS)
-                # TODO: derive resolution from width and height of original frame?
-                frame = cv2.warpPerspective(frame, transform_mat, (1280, 720))
+
+                frame = cv2.warpPerspective(frame, transform_mat, colorframe.shape[1:None:-1])
 
             # to measure time to completion
-            print(time.time() - timestamp)
+            # print(time.time() - timestamp)
             yield frame
             # sleep for sometime
             await asyncio.sleep(0.00001)
@@ -236,118 +161,6 @@ async def custom_frame_generator(pattern):
         print(bcolors.OKGREEN + "\n Session log saved: " + log.name + "\n" + bcolors.WARNING)
         log.close()
         device.stop()
-
-
-def ir_annotations(frame, caliColorframe, device, transform_mat, prev_point, prev_frame, current_tui_setting):
-    irframe = device.getirstream()
-    point = ir_detection.detect(irframe, caliColorframe)
-    if len(prev_frame) < 1:
-        prev_frame = np.zeros_like(frame)
-    if point[0] != -1:
-        for key in tui_dict.keys():
-            tuiX = tui_dict[key]["edges"][:, :1]
-            tuiY = tui_dict[key]["edges"][:, 1:]
-            # check if the ir detection is on an aruco code
-            if (point[0] < tuiX.max() and point[0] > tuiX.min() and point[1] < tuiY.max() and point[1] > tuiY.min()):
-                # change the draw settings according to the code
-                current_tui_setting = tui_dict[key]
-                # make a brief outline around the code to signify the functionality
-                pts = tui_dict[key]["edges"].reshape((-1, 1, 2))
-                color = current_tui_setting["color"]
-                if color == (0, 0, 0):
-                    for p in pts:
-                        cv2.circle(frame, (p[0][0], p[0][1]), 5, (255, 255, 255), -1)
-                else:
-                    cv2.polylines(frame, [pts], True, color, 3)
-                # do not draw a point or line
-                point = (-1,-1)
-                break
-        if point[0] != -1:
-            color = current_tui_setting["color"]
-            thickness = current_tui_setting["thickness"]
-            prev_frame[(point[1] - int(thickness/2)):(point[1] + int(thickness/2)), (point[0] - int(thickness/2)):(point[0] + int(thickness/2))] = current_tui_setting["color"]
-            if prev_point[0] != -1:
-                cv2.line(prev_frame, prev_point, point, color, thickness)
-    prev_point = point
-    frame = cv2.bitwise_or(frame, prev_frame)
-    return cv2.bitwise_or(frame, prev_frame), prev_frame, prev_point, current_tui_setting
-
-
-def hand_detection(frame, caliColorframe, colorspace, edges, lower_color, upper_color, handsMP, log, tabledistance,
-                   logging, depth, timestamp, device, transform_mat):
-    # hands, lower_color, upper_color = hand_lib.getHand(caliColorframe, colorframe, colorspace,
-    #                                                   pattern.edges,
-    #                                                   lower_color, upper_color)
-    # Mediapipe
-    global min_samples, eps
-    hands, lower_color, upper_color = hand_lib_nn.getHand(caliColorframe, colorspace, edges, lower_color, upper_color,
-                                                          handsMP, log, min_samples, eps)
-
-    # if hands were detected visualize them
-    if len(hands) > 0:
-        # if the depth is enabled read out the depth frame
-        if depth:
-            depthframe = device.getdepthstream()
-            caliDepthframe = cv2.warpPerspective(depthframe, transform_mat, (1280, 720))
-
-        # Print and log the fingertips
-        for i, hand in enumerate(hands):
-            hand_image = hand["hand_image"]
-            # Altering hand colors (to avoid feedback loop
-            # Option 1: Inverting the picture
-            if edges != True:
-                hand_image = cv2.bitwise_not(hand_image, hand["mask"])
-                hand_image = cv2.bitwise_and(hand_image, hand_image, mask=hand["mask"])
-            # Calculate hand centre
-            M = cv2.moments(hand["contour"])
-            cX = int(M["m10"] / M["m00"])
-            cY = int(M["m01"] / M["m00"])
-
-            # if depth is enabled also visualize and log the distance
-            if depth:
-                handToTableDist = (float(tabledistance) - float(caliDepthframe[cY][cX])) / 100
-
-                if handToTableDist > 0 and handToTableDist < 10:
-                    hand_image = height.visHeight(hand_image, handToTableDist)
-
-                if logging:
-                    cv2.circle(hand_image, (cX, cY), 4, utils.id_to_random_color(i), -1)
-                    cv2.putText(hand_image, "  " + str(handToTableDist), (cX, cY),
-                                cv2.FONT_HERSHEY_SIMPLEX, 0.25, utils.id_to_random_color(i), 1, cv2.LINE_AA)
-                log.write(''.join(
-                    [str(timestamp), " ", str(float(tabledistance) - float(depthframe[cY][cX])), " H ", str(cX), " ",
-                     str(cY), "\n"]))
-
-                for f in hand["fingers"]:
-                    if logging:
-                        cv2.circle(hand_image, f, 4, utils.id_to_random_color(i), -1)
-                        cv2.putText(hand_image,
-                                    "  " + str((float(tabledistance) - float(caliDepthframe[f[1]][f[0]])) / 100), f,
-                                    cv2.FONT_HERSHEY_SIMPLEX, 0.25, utils.id_to_random_color(i),
-                                    1, cv2.LINE_AA)
-                    # print("color pixel value of ", f, ":", frame[f[1]][f[0]]) # <- TODO: reverse coordinates idk why
-                    # print("depth pixel value of ", f, ":", depthframe[f[1]][f[0]])
-                    log.write(''.join(
-                        [str(timestamp), " ", str(float(tabledistance) - float(depthframe[cY][cX])), " P ", str(f[0]),
-                         " ", str(f[1]), "\n"]))
-            else:
-                if logging:
-                    cv2.circle(hand_image, (cX, cY), 4, utils.id_to_random_color(i), -1)
-                # record depth as "Null"
-                log.write(str(timestamp) + " Null H " + str(cX) + " " + str(
-                    cY) + "\n")
-                for f in hand["fingers"]:
-                    if logging:
-                        cv2.circle(hand_image, f, 4, utils.id_to_random_color(i), -1)
-                    # record depth as "Null"
-                    log.write(''.join([str(timestamp), " Null P ", str(f[0]), " ", str(
-                        f[1]), "\n"]))
-            # add the hand to the frame
-            frame = cv2.bitwise_or(frame, hand_image)
-    # frame = reducer(frame, percentage=40)  # reduce frame by 40%
-    # to measure time to completion
-    print(time.time() - timestamp)
-    return frame
 
 
 # Create a async function where you want to show/manipulate your received frames
@@ -368,16 +181,15 @@ async def client_iterator(client, pattern):
                         frame = frame.astype("uint8")
                         frame = cv2.bitwise_or(frame, irframe)
                 cv2.imshow("Output Frame", frame)
-                if overlay:
-                    hwnd = win32gui.FindWindow(None, "Output Frame")
-                    win32gui.SetWindowLong(hwnd, win32con.GWL_EXSTYLE, win32gui.GetWindowLong(hwnd,
-                                                                                              win32con.GWL_EXSTYLE) | win32con.WS_EX_LAYERED)  # no idea, but it goes together with transparency
-                    win32gui.SetWindowPos(hwnd, win32con.HWND_TOPMOST, 0, 0, GetSystemMetrics(0), GetSystemMetrics(1),
-                                          0)  # always on top
-                    win32gui.ShowWindow(hwnd, win32con.SW_MAXIMIZE)  # maximiced
-                    if pattern.paper == False:
-                        win32gui.SetLayeredWindowAttributes(hwnd, win32api.RGB(0, 0, 0), 0,
-                                                            win32con.LWA_COLORKEY)  # black as transparent
+                hwnd = win32gui.FindWindow(None, "Output Frame")
+                win32gui.SetWindowLong(hwnd, win32con.GWL_EXSTYLE, win32gui.GetWindowLong(hwnd,
+                                                                                          win32con.GWL_EXSTYLE) | win32con.WS_EX_LAYERED)  # no idea, but it goes together with transparency
+                win32gui.SetWindowPos(hwnd, win32con.HWND_TOPMOST, 0, 0, GetSystemMetrics(0), GetSystemMetrics(1),
+                                      0)  # always on top
+                win32gui.ShowWindow(hwnd, win32con.SW_MAXIMIZE)  # maximiced
+                if pattern.paper == False:
+                    win32gui.SetLayeredWindowAttributes(hwnd, win32api.RGB(0, 0, 0), 0,
+                                                        win32con.LWA_COLORKEY)  # black as transparent
                 key = cv2.waitKey(1) & 0xFF
                 # await before continuing
             await asyncio.sleep(0.00001)
@@ -482,12 +294,9 @@ class App(object):
 
 
 def tkinterGui():
-    global finish
     mainWindow = tk.Tk()
     app = App(mainWindow)
     mainWindow.mainloop()
-    # When the GUI is closed we set finish to "True"
-    finish = True
 
 
 if __name__ == '__main__':

@@ -4,7 +4,6 @@ import numpy as np
 from sklearn.cluster import DBSCAN
 import libs.utils as utils
 import math
-from vidgear.gears.helper import reducer
 
 mp_hands = mp.solutions.hands
 mp_drawing = mp.solutions.drawing_utils
@@ -20,7 +19,7 @@ def getHand(colorframe, colorspace, edges, lower_color, upper_color, handsMP, lo
         # https://stackoverflow.com/questions/52099356/opencvconvexitydefects-on-largest-contour-gives-error
         hull = cv2.convexHull(cnt)
         index = cv2.convexHull(cnt, returnPoints=False)
-        # TODO: different ways of grouping hull points into neigbours/clusters
+        # TODO: different ways of grouping hull points into neighbours/clusters
         # term_crit = (cv2.TERM_CRITERIA_EPS, 30, 0.1)
         # _ret, labels, centers = cv2.kmeans(np.float32(hull[:,0]), 6, None, term_crit, 10, 0)
         # point_tree = spatial.cKDTree(np.float32(hull[:,0]))
@@ -37,35 +36,6 @@ def getHand(colorframe, colorspace, edges, lower_color, upper_color, handsMP, lo
             print("convexity defects could not be determined")
             defects = np.array([])
         return defects
-
-    def getHullVertices(defects, contour):
-        hullPointDefectNeighbors = []  # 0: start, 1: end, 2:defect
-        for x in range(defects.shape[0]):
-            s, e, f, d = defects[x, 0]
-            start = tuple(contour[s][0])
-            end = tuple(contour[e][0])
-            far = tuple(contour[f][0])
-            hullPointDefectNeighbors.append([start, end, far])
-        return hullPointDefectNeighbors
-
-    def filterVerticesByAngle(neihbors):
-        maxAngleDeg = math.radians(60)
-        i = 0
-        fingers = []
-        for triple in neihbors:
-            cf = triple[0]  # candidate finger
-            rd = triple[2]  # right deflect
-            if i == 0:  # left deflect
-                ld = neihbors[len(neihbors) - 1][2]
-            else:
-                ld = neihbors[i - 1][2]
-            v_cp_ld = (ld[0] - cf[0], ld[1] - cf[1])
-            v_cp_rd = (rd[0] - cf[0], rd[1] - cf[1])
-            beta = utils.angle_between(v_cp_ld, v_cp_rd)
-            if beta < maxAngleDeg and len(fingers) < 5:
-                fingers.append(cf)
-            i += 1
-        return fingers
 
     detectionFrame = cv2.cvtColor(colorframe, colorspace)
     hands = []
@@ -135,11 +105,10 @@ def getHand(colorframe, colorspace, edges, lower_color, upper_color, handsMP, lo
             # The hand color is usually not extremely bright or extremely dark, so the detection are thresholded
             upperThresh = curr_detections[curr_detections > 248].size / curr_detections.size
             lowerThresh = curr_detections[curr_detections < 7].size / curr_detections.size
-            # for detection in curr_detections:
-            #     log.write(''.join(["[", str(detection[0]), ", ", str(detection[1]), ", ", str(detection[2]), "],", "\n"]))
-            # The detection is only declared valid if not too many values are extremely bright/dark
+
+            # The detection is only declared valid if not too many values are extremely bright or extremely dark
             if upperThresh < 0.3 and lowerThresh < 0.3 and len(crop_img) > 0:
-                # If there are too many clusters, the detected color was not very homogenic and therefore probably not valid
+                # If there are too many clusters, the detected color was not very homogenic and therefore probably not valid (old color is used then)
                 if clusters[clusters > 0].size < 3 and clusters[clusters > 1].size == 0:
                     # calculate mean and standard deviation of the detected colors
                     mean = np.mean(curr_detections, axis=0)
@@ -163,14 +132,14 @@ def getHand(colorframe, colorspace, edges, lower_color, upper_color, handsMP, lo
                 method = cv2.CHAIN_APPROX_SIMPLE
                 hand_contours = []
                 contours, hierarchy = cv2.findContours(handmask, mode, method)
-                # initialize hand
+                # initialize hand object
                 hand = {
                     "contour": np.empty(shape=(0,1,2), dtype=np.uint8),
                     "fingers": points,
                     "mask": np.zeros_like(handmask)
                 }
                 for c in contours:
-                    # If contours are bigger than a certain area we push them to the array
+                    # contours are only valid if they are larger than a certain area size
                     if cv2.contourArea(c) > 3000:
                         rHull = getRoughHull(c)
                         if rHull is not None:
@@ -189,7 +158,9 @@ def getHand(colorframe, colorspace, edges, lower_color, upper_color, handsMP, lo
                 # if there is a contour there is also a hand
                 if hand["contour"].shape != (0,1,2):
                     copy = colorframe.copy()
-                    # edge only mode
+                    ##################
+                    # edge only mode #
+                    ##################
                     if edges:
                         # Heavily dilated mask
                         heavily_dilated = cv2.dilate(tempOut, cv2.getStructuringElement(cv2.MORPH_RECT, (15, 30)),
@@ -217,14 +188,84 @@ def getHand(colorframe, colorspace, edges, lower_color, upper_color, handsMP, lo
                             cv2.drawContours(hand_image, contours, i, (1, 1, 1), 1, cv2.LINE_8, hierarchy, 0)
                         # mask out the outer edges, that belong to the more heavily dilated mask
                         result = cv2.bitwise_and(hand_image, hand_image, mask=dilated)
-                        # comment this in, to see edges and hand:
+                        # comment this in, to see edges AND hand:
                         # hand_image_norm = cv2.bitwise_and(copy, copy, mask=curMask[0])
                         # hand_image = cv2.bitwise_or(hand_image, hand_image_norm)
 
-                    # normal mode
+                    ###############
+                    # normal mode #
+                    ###############
                     else:
                         result = cv2.bitwise_and(copy, copy, mask=hand["mask"])
                         result = cv2.bitwise_not(result)
                     hand["hand_image"] = result
                     hands.append(hand)
     return hands, lower_color, upper_color
+
+def hand_detection(frame, caliColorframe, colorspace, edges, lower_color, upper_color, handsMP, log, tabledistance,
+                   logging, depth, timestamp, device, transform_mat, min_samples, eps):
+    hands, lower_color, upper_color = getHand(caliColorframe, colorspace, edges, lower_color, upper_color,
+                                                          handsMP, log, min_samples, eps)
+
+    # if hands were detected visualize them
+    if len(hands) > 0:
+        # if the depth is enabled read out the depth frame
+        if depth:
+            depthframe = device.getdepthstream()
+            caliDepthframe = cv2.warpPerspective(depthframe, transform_mat, (1280, 720))
+
+        # Print and log the fingertips
+        for i, hand in enumerate(hands):
+            hand_image = hand["hand_image"]
+            # Altering hand colors (to avoid feedback loop
+            # Option 1: Inverting the picture
+            if edges != True:
+                hand_image = cv2.bitwise_not(hand_image, hand["mask"])
+                hand_image = cv2.bitwise_and(hand_image, hand_image, mask=hand["mask"])
+            # Calculate hand centre
+            M = cv2.moments(hand["contour"])
+            cX = int(M["m10"] / M["m00"])
+            cY = int(M["m01"] / M["m00"])
+
+            # if depth is enabled also visualize and log the distance
+            if depth:
+                handToTableDist = (float(tabledistance) - float(caliDepthframe[cY][cX])) / 100
+
+                if handToTableDist > 0 and handToTableDist < 10:
+                    hand_image = height.visHeight(hand_image, handToTableDist)
+
+                if logging:
+                    cv2.circle(hand_image, (cX, cY), 4, utils.id_to_random_color(i), -1)
+                    cv2.putText(hand_image, "  " + str(handToTableDist), (cX, cY),
+                                cv2.FONT_HERSHEY_SIMPLEX, 0.25, utils.id_to_random_color(i), 1, cv2.LINE_AA)
+                log.write(''.join(
+                    [str(timestamp), " ", str(float(tabledistance) - float(depthframe[cY][cX])), " H ", str(cX), " ",
+                     str(cY), "\n"]))
+
+                for f in hand["fingers"]:
+                    if logging:
+                        cv2.circle(hand_image, f, 4, utils.id_to_random_color(i), -1)
+                        cv2.putText(hand_image,
+                                    "  " + str((float(tabledistance) - float(caliDepthframe[f[1]][f[0]])) / 100), f,
+                                    cv2.FONT_HERSHEY_SIMPLEX, 0.25, utils.id_to_random_color(i),
+                                    1, cv2.LINE_AA)
+                    # print("color pixel value of ", f, ":", frame[f[1]][f[0]]) # <- TODO: reverse coordinates idk why
+                    # print("depth pixel value of ", f, ":", depthframe[f[1]][f[0]])
+                    log.write(''.join(
+                        [str(timestamp), " ", str(float(tabledistance) - float(depthframe[cY][cX])), " P ", str(f[0]),
+                         " ", str(f[1]), "\n"]))
+            else:
+                if logging:
+                    cv2.circle(hand_image, (cX, cY), 4, utils.id_to_random_color(i), -1)
+                # record depth as "Null"
+                log.write(str(timestamp) + " Null H " + str(cX) + " " + str(
+                    cY) + "\n")
+                for f in hand["fingers"]:
+                    if logging:
+                        cv2.circle(hand_image, f, 4, utils.id_to_random_color(i), -1)
+                    # record depth as "Null"
+                    log.write(''.join([str(timestamp), " Null P ", str(f[0]), " ", str(
+                        f[1]), "\n"]))
+            # add the hand to the frame
+            frame = cv2.bitwise_or(frame, hand_image)
+    return frame

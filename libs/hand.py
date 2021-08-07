@@ -77,17 +77,17 @@ def getHand(colorframe, uncaliColorframe, colorspace, edges, lower_color, upper_
             hullPointDefectNeighbors.append([start, end, far])
         return hullPointDefectNeighbors
 
-    def filterVerticesByAngle(neihbors):
+    def filterVerticesByAngle(neighbors):
         maxAngleDeg = math.radians(60)
         i = 0
         fingers = []
-        for triple in neihbors:
+        for triple in neighbors:
             cf = triple[0]  # candidate finger
             rd = triple[2]  # right deflect
             if i == 0:  # left deflect
-                ld = neihbors[len(neihbors) - 1][2]
+                ld = neighbors[len(neighbors) - 1][2]
             else:
-                ld = neihbors[i - 1][2]
+                ld = neighbors[i - 1][2]
             v_cp_ld = (ld[0] - cf[0], ld[1] - cf[1])
             v_cp_rd = (rd[0] - cf[0], rd[1] - cf[1])
             beta = utils.angle_between(v_cp_ld, v_cp_rd)
