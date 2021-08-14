@@ -1,6 +1,7 @@
 import cv2
 from cv2 import aruco
 import numpy as np
+from scipy.spatial import distance as dist
 
 def calibrateViaRedSquares(originalframe, segmentedframe, matrix):
     hsv = cv2.cvtColor(originalframe, cv2.COLOR_BGR2HSV)
@@ -63,11 +64,16 @@ def calibrateViaARUco(originalframe):
     corners, ids, rejectedImgPoints = aruco.detectMarkers(gray, aruco_dict, parameters=parameters)
     frame_markers = aruco.drawDetectedMarkers(np.zeros(originalframe.shape), corners, ids)
 
+    # this contains the edges of every detected code
     calibrationMatrix = []
+    # this contains a width and height of every detected code
+    lengths = []
     if ids is not None:
         for i in range(len(ids)):
             if ids[i] == 0:
                 c = corners[i][0]
+                lengths.append(dist.euclidean((c[0][0], c[0][1]), (c[1][0], c[1][1])))
+                lengths.append(dist.euclidean((c[1][0], c[1][1]), (c[2][0], c[2][1])))
                 calibrationMatrix.append([c[0, 0], c[0, 1]])
 
     if len(calibrationMatrix) == 4:
@@ -83,4 +89,9 @@ def calibrateViaARUco(originalframe):
         b = np.sum(calibrationMatrix, axis=1)
         idx = (-b).argsort()
         target_corners = np.array(np.take(calibrationMatrix, idx, axis=0), np.float32)
-    return frame_markers, screen_corners, target_corners
+
+        # calculate average length of one pixel in centimeters
+        average_length = np.mean(lengths)
+        cm_per_pix = 3.7 / average_length
+        return frame_markers, screen_corners, target_corners, cm_per_pix
+    return frame_markers, screen_corners, target_corners, -1

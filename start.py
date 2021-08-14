@@ -62,6 +62,7 @@ async def custom_frame_generator(pattern):
         prev_frame = np.array([])
         prev_point = (-1, -1)
         current_tui_setting = tui_dict[5]
+        cm_per_pix = -1
 
         global irframe, min_samples, eps
 
@@ -85,7 +86,7 @@ async def custom_frame_generator(pattern):
             # Calibration          #
             ########################
             if transform_mat.size == 0:
-                frame, screen_corners, target_corners = cal.calibrateViaARUco(colorframe)
+                frame, screen_corners, target_corners, cm_per_pix = cal.calibrateViaARUco(colorframe)
                 # if all four target corners have been found create the transformation matrix
                 if len(target_corners) == 4:
                     transform_mat = cv2.getPerspectiveTransform(target_corners, screen_corners)
@@ -119,12 +120,12 @@ async def custom_frame_generator(pattern):
                                     tui_dict[key]["edges"] = corners[i][0].astype('int32')
                     # simultaneously detect hands and do the ir drawings
                     with concurrent.futures.ThreadPoolExecutor() as executor:
-                        ir_future = executor.submit(infrared.ir_annotations, frame, colorframe, device, prev_point, prev_frame, current_tui_setting, tui_dict)
-                        hand_future = executor.submit(hand_lib_nn.hand_detection,
-                                                 frame, colorframe, colorspace, pattern.edges, lower_color,
-                                                 upper_color, handsMP, log,
-                                                 tabledistance, pattern.logging, pattern.depth, timestamp, device,
-                                                 transform_mat, min_samples, eps)
+                        ir_future = executor.submit(infrared.ir_annotations, frame, colorframe, device, prev_point,
+                                                    prev_frame, current_tui_setting, tui_dict, cm_per_pix)
+                        hand_future = executor.submit(hand_lib_nn.hand_detection, frame, colorframe, colorspace,
+                                                      pattern.edges, lower_color, upper_color, handsMP, log,
+                                                      tabledistance, pattern.logging, pattern.depth, timestamp, device,
+                                                      transform_mat, min_samples, eps, cm_per_pix)
                         frame = hand_future.result()
                         irframe, prev_frame, prev_point, current_tui_setting = ir_future.result()
                         frame = cv2.bitwise_or(frame, irframe)

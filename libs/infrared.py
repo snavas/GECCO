@@ -1,7 +1,7 @@
 import cv2
 import numpy as np
 
-def detect(irframe, colorframe):
+def detect(irframe, cm_per_pix):
     mask = cv2.inRange(irframe, 255, 255)
     # https://opencv-python-tutroals.readthedocs.io/en/latest/py_tutorials/py_imgproc/py_filtering/py_filtering.html
     blurred = cv2.blur(mask, (5, 5))  # TODO: VERY BASIC, TRY OTHER FILTERS
@@ -17,8 +17,8 @@ def detect(irframe, colorframe):
         method = cv2.CHAIN_APPROX_SIMPLE
         contours, hierarchy = cv2.findContours(thresholded, mode, method)
         for c in contours:
-            # contours are only valid if they have a certain area size
-            if cv2.contourArea(c) < 500 and cv2.contourArea(c) > 10:
+            # points are only valid if they are smaller than 25cm2 and larger than 0.15cm2
+            if cv2.contourArea(c) < (25/(cm_per_pix*cm_per_pix)) and cv2.contourArea(c) > (0.15/(cm_per_pix*cm_per_pix)):
                 # calculate moments of binary image
                 M = cv2.moments(thresholded)
                 # calculate x,y coordinate of center
@@ -28,9 +28,9 @@ def detect(irframe, colorframe):
                 break;
     return (cX,cY)
 
-def ir_annotations(frame, caliColorframe, device, prev_point, prev_frame, current_tui_setting, tui_dict):
+def ir_annotations(frame, caliColorframe, device, prev_point, prev_frame, current_tui_setting, tui_dict, cm_per_pix):
     irframe = device.getirstream()
-    point = detect(irframe, caliColorframe)
+    point = detect(irframe, cm_per_pix)
     if len(prev_frame) < 1:
         # init prev frame as empty
         prev_frame = np.zeros_like(frame)

@@ -8,7 +8,7 @@ import math
 mp_hands = mp.solutions.hands
 mp_drawing = mp.solutions.drawing_utils
 
-def getHand(colorframe, colorspace, edges, lower_color, upper_color, handsMP, log, min_samples, eps):
+def getHand(colorframe, colorspace, edges, lower_color, upper_color, handsMP, log, min_samples, eps, cm_per_pix):
     def calculateCenter(x1, y1, x2, y2):
         x = int((x2 - x1) / 2 + x1)
         y = int((y2 - y1) / 2 + y1)
@@ -139,8 +139,8 @@ def getHand(colorframe, colorspace, edges, lower_color, upper_color, handsMP, lo
                     "mask": np.zeros_like(handmask)
                 }
                 for c in contours:
-                    # contours are only valid if they are larger than a certain area size
-                    if cv2.contourArea(c) > 3000:
+                    # contours are only valid if they are larger than 44cm2
+                    if cv2.contourArea(c) > (44/(cm_per_pix*cm_per_pix)):
                         rHull = getRoughHull(c)
                         if rHull is not None:
                             hand_contours.append(c)
@@ -203,9 +203,9 @@ def getHand(colorframe, colorspace, edges, lower_color, upper_color, handsMP, lo
     return hands, lower_color, upper_color
 
 def hand_detection(frame, caliColorframe, colorspace, edges, lower_color, upper_color, handsMP, log, tabledistance,
-                   logging, depth, timestamp, device, transform_mat, min_samples, eps):
+                   logging, depth, timestamp, device, transform_mat, min_samples, eps, cm_per_pix):
     hands, lower_color, upper_color = getHand(caliColorframe, colorspace, edges, lower_color, upper_color,
-                                                          handsMP, log, min_samples, eps)
+                                                          handsMP, log, min_samples, eps, cm_per_pix)
 
     # if hands were detected visualize them
     if len(hands) > 0:
