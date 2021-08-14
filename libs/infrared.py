@@ -10,12 +10,22 @@ def detect(irframe, colorframe):
     ret, thresholded = cv2.threshold(blurred, 200, 255, cv2.THRESH_BINARY)
     cX = -1
     cY = -1
+
     if (thresholded!=0).any():
-        # calculate moments of binary image
-        M = cv2.moments(thresholded)
-        # calculate x,y coordinate of center
-        cX = int(M["m10"] / M["m00"])
-        cY = int(M["m01"] / M["m00"])
+        # calculate the contours to get the area of the detections
+        mode = cv2.RETR_EXTERNAL  # cv2.RETR_LIST
+        method = cv2.CHAIN_APPROX_SIMPLE
+        contours, hierarchy = cv2.findContours(thresholded, mode, method)
+        for c in contours:
+            # contours are only valid if they have a certain area size
+            if cv2.contourArea(c) < 500 and cv2.contourArea(c) > 10:
+                # calculate moments of binary image
+                M = cv2.moments(thresholded)
+                # calculate x,y coordinate of center
+                cX = int(M["m10"] / M["m00"])
+                cY = int(M["m01"] / M["m00"])
+                # only acknowledge the first valid detection
+                break;
     return (cX,cY)
 
 def ir_annotations(frame, caliColorframe, device, prev_point, prev_frame, current_tui_setting, tui_dict):
