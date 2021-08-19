@@ -118,7 +118,6 @@ async def custom_frame_generator(pattern):
                                 # save the position of the detected codes
                                 if ids[i] == key:
                                     tui_dict[key]["edges"] = corners[i][0].astype('int32')
-                                    tui_dict[key]["inside"] = cv2.pointPolygonTest(target_corners.astype('int32'), (tui_dict[key]["edges"][0][0], tui_dict[key]["edges"][0][1]), False)
                 # simultaneously detect hands and do the ir drawings
                     with concurrent.futures.ThreadPoolExecutor() as executor:
                         ir_future = executor.submit(infrared.ir_annotations, frame, target_corners, device, prev_point,

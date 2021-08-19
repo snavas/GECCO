@@ -18,7 +18,7 @@ def detect(irframe, cm_per_pix):
         contours, hierarchy = cv2.findContours(thresholded, mode, method)
         for c in contours:
             # points are only valid if they are smaller than 25cm2
-            if cv2.contourArea(c) < (25/(cm_per_pix*cm_per_pix)):
+            if cv2.contourArea(c) < (3/(cm_per_pix*cm_per_pix)):
                 # calculate moments of binary image
                 M = cv2.moments(thresholded)
                 # calculate x,y coordinate of center
@@ -46,14 +46,14 @@ def ir_annotations(frame, target_corners, device, prev_point, prev_frame, curren
                 current_tui_setting = tui_dict[key]
 
                 # make a brief outline around the code to signify the functionality
+                pts = target_corners.reshape((-1, 1, 2)).astype('int32')
+                temp = pts[2].copy()
+                pts[2] = pts[3]
+                pts[3] = temp
+                color = current_tui_setting["color"]
+                tui_dict[key]["inside"] = cv2.pointPolygonTest(pts, (tui_dict[key]["edges"][0][0], tui_dict[key]["edges"][0][1]), False)
                 if tui_dict[key]["inside"] > 0.0:
                     pts = tui_dict[key]["edges"].reshape((-1, 1, 2))
-                else:
-                    pts = target_corners.reshape((-1, 1, 2)).astype('int32')
-                    temp = pts[2].copy()
-                    pts[2] = pts[3]
-                    pts[3] = temp
-                color = current_tui_setting["color"]
                 # the eraser has a special outline
                 if color == (0, 0, 0):
                     for p in pts:
