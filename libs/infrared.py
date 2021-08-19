@@ -38,37 +38,38 @@ def ir_annotations(frame, target_corners, device, prev_point, prev_frame, curren
     if point[0] != -1:
         # check if the point was made on any of the aruco codes
         for key in tui_dict.keys():
-            tuiX = tui_dict[key]["edges"][:, :1]
-            tuiY = tui_dict[key]["edges"][:, 1:]
-            # check if the ir detection is on an aruco code
-            if (point[0] < tuiX.max() and point[0] > tuiX.min() and point[1] < tuiY.max() and point[1] > tuiY.min()):
-                # change the draw settings according to the code
-                current_tui_setting = tui_dict[key]
+            if key != 8:
+                tuiX = tui_dict[key]["edges"][:, :1]
+                tuiY = tui_dict[key]["edges"][:, 1:]
+                # check if the ir detection is on an aruco code
+                if (point[0] < tuiX.max() and point[0] > tuiX.min() and point[1] < tuiY.max() and point[1] > tuiY.min()):
+                    # change the draw settings according to the code
+                    current_tui_setting = tui_dict[key]
 
-                # make a brief outline around the code to signify the functionality
-                pts = target_corners.reshape((-1, 1, 2)).astype('int32')
-                temp = pts[2].copy()
-                pts[2] = pts[3]
-                pts[3] = temp
-                color = current_tui_setting["color"]
-                tui_dict[key]["inside"] = cv2.pointPolygonTest(pts, (tui_dict[key]["edges"][0][0], tui_dict[key]["edges"][0][1]), False)
-                if tui_dict[key]["inside"] > 0.0:
-                    pts = tui_dict[key]["edges"].reshape((-1, 1, 2))
-                # the eraser has a special outline
-                if color == (0, 0, 0):
-                    for p in pts:
-                        cv2.circle(frame, (p[0][0], p[0][1]), 5, (255, 255, 255), -1)
-                # normal outline for the other draw modes
-                else:
-                    cv2.polylines(frame, [pts], True, color, 3)
+                    # make a brief outline around the code to signify the functionality
+                    pts = target_corners.reshape((-1, 1, 2)).astype('int32')
+                    temp = pts[2].copy()
+                    pts[2] = pts[3]
+                    pts[3] = temp
+                    color = current_tui_setting["color"]
+                    tui_dict[key]["inside"] = cv2.pointPolygonTest(pts, (tui_dict[key]["edges"][0][0], tui_dict[key]["edges"][0][1]), False)
+                    if tui_dict[key]["inside"] > 0.0:
+                        pts = tui_dict[key]["edges"].reshape((-1, 1, 2))
+                    # the eraser has a special outline
+                    if color == (0, 0, 0):
+                        for p in pts:
+                            cv2.circle(frame, (p[0][0], p[0][1]), 5, (255, 255, 255), -1)
+                    # normal outline for the other draw modes
+                    else:
+                        cv2.polylines(frame, [pts], True, color, 3)
 
-                # do not draw a point or line
-                point = (-1, -1)
-                break
+                    # do not draw a point or line
+                    point = (-1, -1)
+                    break
         # the point is checked again, because if it was on an aruco code it would now be (-1, -1)
         if point[0] != -1:
             color = current_tui_setting["color"]
-            thickness = current_tui_setting["thickness"]
+            thickness = tui_dict[8]["thickness"]
             # draw point
             prev_frame[(point[1] - int(thickness/2)):(point[1] + int(thickness/2)), (point[0] - int(thickness/2)):(point[0] + int(thickness/2))] = current_tui_setting["color"]
             # draw line

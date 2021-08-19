@@ -6,6 +6,7 @@ import threading
 import time
 import tkinter as tk
 import traceback
+import math
 
 import asyncio
 import cv2
@@ -41,6 +42,13 @@ handsMP = mp_hands.Hands(
 
 # init ir_frame
 irframe = np.array([])
+
+def angle(pt1,pt2):
+    m1 = (pt1[0] - pt1[0])/1
+    m2 = (pt2[0] - pt1[0])/(pt2[1]-pt1[1])
+
+    tnAngle = (m1-m2)/(1+(m1*m2))
+    return math.atan(tnAngle)
 
 # Create a async frame generator as custom source
 async def custom_frame_generator(pattern):
@@ -86,7 +94,7 @@ async def custom_frame_generator(pattern):
             # Calibration          #
             ########################
             if transform_mat.size == 0:
-                frame, screen_corners, target_corners, calibrationMatrix, cm_per_pix = cal.calibrateViaARUco(colorframe)
+                frame, screen_corners, target_corners, cm_per_pix = cal.calibrateViaARUco(colorframe)
                 # if all four target corners have been found create the transformation matrix
                 if len(target_corners) == 4:
                     transform_mat = cv2.getPerspectiveTransform(target_corners, screen_corners)
@@ -117,7 +125,14 @@ async def custom_frame_generator(pattern):
                             for key in tui_dict.keys(): # loop through all codes
                                 # save the position of the detected codes
                                 if ids[i] == key:
-                                    tui_dict[key]["edges"] = corners[i][0].astype('int32')
+                                    if key == 8:
+                                        angle_code = angle((corners[i][0][0][0], corners[i][0][0][1]),(corners[i][0][2][0], corners[i][0][2][1]))*180/math.pi
+                                        angle_screen = angle((target_corners[0][0], target_corners[0][1]), (target_corners[2][0], target_corners[2][1])) * 180 / math.pi
+                                        angle_lines = abs(angle_code - angle_screen)
+                                        if math.isnan(angle_lines) != True:
+                                            tui_dict[key]['thickness'] = int(max(20*(angle_lines/360), 1.0))
+                                    else:
+                                        tui_dict[key]["edges"] = corners[i][0].astype('int32')
                 # simultaneously detect hands and do the ir drawings
                     with concurrent.futures.ThreadPoolExecutor() as executor:
                         ir_future = executor.submit(infrared.ir_annotations, frame, target_corners, device, prev_point,

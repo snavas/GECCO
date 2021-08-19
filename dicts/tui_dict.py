@@ -64,4 +64,8 @@ tui_dict = {
         [0, 0]]], dtype='uint8'),
         "inside": 1.0
     },
+    8: {
+        "thickness": 2,
+        "inside": 1.0
+    }
 }
