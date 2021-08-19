@@ -107,7 +107,7 @@ def getHand(colorframe, colorspace, edges, lower_color, upper_color, handsMP, lo
             lowerThresh = curr_detections[curr_detections < 7].size / curr_detections.size
 
             # The detection is only declared valid if not too many values are extremely bright or extremely dark
-            if upperThresh < 0.3 and lowerThresh < 0.3 and len(crop_img) > 0:
+            if upperThresh < 0.3 and lowerThresh < 0.3 and crop_img.size > 0:
                 # If there are too many clusters, the detected color was not very homogenic and therefore probably not valid (old color is used then)
                 if clusters[clusters > 0].size < 3 and clusters[clusters > 1].size == 0:
                     # calculate mean and standard deviation of the detected colors

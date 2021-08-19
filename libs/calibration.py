@@ -93,5 +93,5 @@ def calibrateViaARUco(originalframe):
         # calculate average length of one pixel in centimeters
         average_length = np.mean(lengths)
         cm_per_pix = 3.7 / average_length
-        return frame_markers, screen_corners, target_corners, cm_per_pix
-    return frame_markers, screen_corners, target_corners, -1
+        return frame_markers, screen_corners, target_corners, np.array(calibrationMatrix), cm_per_pix
+    return frame_markers, screen_corners, target_corners, np.array(calibrationMatrix), -1

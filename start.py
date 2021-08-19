@@ -86,7 +86,7 @@ async def custom_frame_generator(pattern):
             # Calibration          #
             ########################
             if transform_mat.size == 0:
-                frame, screen_corners, target_corners, cm_per_pix = cal.calibrateViaARUco(colorframe)
+                frame, screen_corners, target_corners, calibrationMatrix, cm_per_pix = cal.calibrateViaARUco(colorframe)
                 # if all four target corners have been found create the transformation matrix
                 if len(target_corners) == 4:
                     transform_mat = cv2.getPerspectiveTransform(target_corners, screen_corners)
@@ -118,9 +118,10 @@ async def custom_frame_generator(pattern):
                                 # save the position of the detected codes
                                 if ids[i] == key:
                                     tui_dict[key]["edges"] = corners[i][0].astype('int32')
-                    # simultaneously detect hands and do the ir drawings
+                                    tui_dict[key]["inside"] = cv2.pointPolygonTest(target_corners.astype('int32'), (tui_dict[key]["edges"][0][0], tui_dict[key]["edges"][0][1]), False)
+                # simultaneously detect hands and do the ir drawings
                     with concurrent.futures.ThreadPoolExecutor() as executor:
-                        ir_future = executor.submit(infrared.ir_annotations, frame, colorframe, device, prev_point,
+                        ir_future = executor.submit(infrared.ir_annotations, frame, target_corners, device, prev_point,
                                                     prev_frame, current_tui_setting, tui_dict, cm_per_pix)
                         hand_future = executor.submit(hand_lib_nn.hand_detection, frame, colorframe, colorspace,
                                                       pattern.edges, lower_color, upper_color, handsMP, log,

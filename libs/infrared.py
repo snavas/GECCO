@@ -17,18 +17,18 @@ def detect(irframe, cm_per_pix):
         method = cv2.CHAIN_APPROX_SIMPLE
         contours, hierarchy = cv2.findContours(thresholded, mode, method)
         for c in contours:
-            # points are only valid if they are smaller than 25cm2 and larger than 0.15cm2
-            if cv2.contourArea(c) < (25/(cm_per_pix*cm_per_pix)) and cv2.contourArea(c) > (0.15/(cm_per_pix*cm_per_pix)):
+            # points are only valid if they are smaller than 25cm2
+            if cv2.contourArea(c) < (25/(cm_per_pix*cm_per_pix)):
                 # calculate moments of binary image
                 M = cv2.moments(thresholded)
                 # calculate x,y coordinate of center
                 cX = int(M["m10"] / M["m00"])
                 cY = int(M["m01"] / M["m00"])
                 # only acknowledge the first valid detection
-                break;
+                break
     return (cX,cY)
 
-def ir_annotations(frame, caliColorframe, device, prev_point, prev_frame, current_tui_setting, tui_dict, cm_per_pix):
+def ir_annotations(frame, target_corners, device, prev_point, prev_frame, current_tui_setting, tui_dict, cm_per_pix):
     irframe = device.getirstream()
     point = detect(irframe, cm_per_pix)
     if len(prev_frame) < 1:
@@ -44,8 +44,15 @@ def ir_annotations(frame, caliColorframe, device, prev_point, prev_frame, curren
             if (point[0] < tuiX.max() and point[0] > tuiX.min() and point[1] < tuiY.max() and point[1] > tuiY.min()):
                 # change the draw settings according to the code
                 current_tui_setting = tui_dict[key]
+
                 # make a brief outline around the code to signify the functionality
-                pts = tui_dict[key]["edges"].reshape((-1, 1, 2))
+                if tui_dict[key]["inside"] > 0.0:
+                    pts = tui_dict[key]["edges"].reshape((-1, 1, 2))
+                else:
+                    pts = target_corners.reshape((-1, 1, 2)).astype('int32')
+                    temp = pts[2].copy()
+                    pts[2] = pts[3]
+                    pts[3] = temp
                 color = current_tui_setting["color"]
                 # the eraser has a special outline
                 if color == (0, 0, 0):
@@ -54,6 +61,7 @@ def ir_annotations(frame, caliColorframe, device, prev_point, prev_frame, curren
                 # normal outline for the other draw modes
                 else:
                     cv2.polylines(frame, [pts], True, color, 3)
+
                 # do not draw a point or line
                 point = (-1, -1)
                 break
