@@ -212,7 +212,7 @@ def hand_detection(frame, caliColorframe, colorspace, edges, lower_color, upper_
         # if the depth is enabled read out the depth frame
         if depth:
             depthframe = device.getdepthstream()
-            caliDepthframe = cv2.warpPerspective(depthframe, transform_mat, (1280, 720))
+            caliDepthframe = cv2.warpPerspective(depthframe, transform_mat, depthframe.shape[1:None:-1])
 
         # Print and log the fingertips
         for i, hand in enumerate(hands):

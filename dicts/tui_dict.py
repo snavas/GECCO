@@ -66,6 +66,10 @@ tui_dict = {
     },
     8: {
         "thickness": 2,
+        "edges": np.array([[[0, 0],
+        [0, 0],
+        [0, 0],
+        [0, 0]]], dtype='uint8'),
         "inside": 1.0
     }
 }
