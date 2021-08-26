@@ -109,7 +109,7 @@ async def custom_frame_generator(pattern):
                         ir_future = executor.submit(infrared.ir_annotations, frame, colorframe, target_corners, device, prev_point,
                                                     prev_frame, current_tui_setting, tui_dict, cm_per_pix)
                         hand_future = executor.submit(hand_lib_nn.hand_detection, frame, colorframe, colorspace,
-                                                      pattern, lower_color, upper_color, handsMP,
+                                                      pattern, lower_color, upper_color, handsMP, log,
                                                       tabledistance, timestamp, device,
                                                       transform_mat, min_samples, eps, cm_per_pix)
                         frame = hand_future.result()
@@ -121,7 +121,7 @@ async def custom_frame_generator(pattern):
                 ##############
                 else:
                     frame = hand_lib_nn.hand_detection(frame, colorframe, colorspace,
-                                                      pattern, lower_color, upper_color, handsMP,
+                                                      pattern, lower_color, upper_color, handsMP, log,
                                                       tabledistance, timestamp, device,
                                                       transform_mat, min_samples, eps, cm_per_pix)
                 ##### Mediapipe: visualize detections for debugging ###########
@@ -189,7 +189,7 @@ async def client_iterator(client, pattern):
 async def netgear_async_playback(pattern):
     try:
         # define and launch Client with `receive_mode = True`
-        server = NetGear_Async(address=PeerAddress, port=PeerPort, logging=pattern.logging)  # invalid protocol
+        server = NetGear_Async(address=PeerAddress, port=PeerPort, logging=pattern.logging, source=None)  # invalid protocol
         server.config["generator"] = custom_frame_generator(pattern)
         server.launch()
         # define and launch Client with `receive_mode = True` and timeout = 5.0

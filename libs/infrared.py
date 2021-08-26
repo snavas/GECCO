@@ -68,7 +68,7 @@ def ir_annotations(frame, colorframe, target_corners, device, prev_point, prev_f
                                             (target_corners[0][0], target_corners[0][1]),
                                             (target_corners[2][0], target_corners[2][1]))
                         if math.isnan(angle_lines) != True:
-                            tui_dict[key]['thickness'] = int(max(15 * (angle_lines / 360), 1.0))
+                            tui_dict[key]['thickness'] = int(max(25 * (angle_lines / 360), 1.0))
                     tui_dict[key]["edges"] = corners[i][0].astype('int32')
 
     # the order of the frame corners has to be adjusted to form a rectangle
@@ -97,7 +97,7 @@ def ir_annotations(frame, colorframe, target_corners, device, prev_point, prev_f
                     # make a brief outline around the frame or the aruco code to signify the functionality
                     color = current_tui_setting["color"]
                     # check if the aruco code is inside the frame
-                    tui_dict[key]["inside"] = cv2.pointPolygonTest(frame_corners, (tui_dict[key]["edges"][0][0], tui_dict[key]["edges"][0][1]), False)
+                    tui_dict[key]["inside"] = cv2.pointPolygonTest(frame_corners, (int(tui_dict[key]["edges"][0][0]), int(tui_dict[key]["edges"][0][1])), False)
                     # if is not inside the frame use the corners of the aruco code for drawing the outline
                     if tui_dict[key]["inside"] > 0.0:
                         pts = tui_dict[key]["edges"].reshape((-1, 1, 2))
@@ -122,7 +122,7 @@ def ir_annotations(frame, colorframe, target_corners, device, prev_point, prev_f
             if color == (0,0,0):
                 thickness = thickness*2
             # draw point
-            cv2.circle(prev_frame, (point[1], point[0]), thickness, current_tui_setting["color"], -1)
+            cv2.circle(prev_frame, (point[0], point[1]), int(thickness/2), color, -1)
             # draw line
             if prev_point[0] != -1:
                 cv2.line(prev_frame, prev_point, point, color, thickness)

@@ -215,7 +215,7 @@ def getHand(colorframe, colorspace, pattern, lower_color, upper_color, handsMP, 
 def hand_detection(frame, caliColorframe, colorspace, pattern, lower_color, upper_color, handsMP, log, tabledistance,
                    timestamp, device, transform_mat, min_samples, eps, cm_per_pix):
     hands, lower_color, upper_color = getHand(caliColorframe, colorspace, pattern, lower_color, upper_color,
-                                                          handsMP, log, min_samples, eps, cm_per_pix)
+                                                          handsMP, min_samples, eps, cm_per_pix)
 
     # if hands were detected visualize them
     if len(hands) > 0:
