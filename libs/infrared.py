@@ -118,8 +118,10 @@ def ir_annotations(frame, colorframe, target_corners, device, prev_point, prev_f
         if point[0] != -1:
             color = current_tui_setting["color"]
             thickness = tui_dict[8]["thickness"]
+            if color == (0,0,0):
+                thickness = thickness*2
             # draw point
-            prev_frame[(point[1] - int(thickness/2)):(point[1] + int(thickness/2)), (point[0] - int(thickness/2)):(point[0] + int(thickness/2))] = current_tui_setting["color"]
+            cv2.circle(prev_frame, (point[1], point[0]), thickness, current_tui_setting["color"], -1)
             # draw line
             if prev_point[0] != -1:
                 cv2.line(prev_frame, prev_point, point, color, thickness)
