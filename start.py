@@ -109,8 +109,8 @@ async def custom_frame_generator(pattern):
                         ir_future = executor.submit(infrared.ir_annotations, frame, colorframe, target_corners, device, prev_point,
                                                     prev_frame, current_tui_setting, tui_dict, cm_per_pix)
                         hand_future = executor.submit(hand_lib_nn.hand_detection, frame, colorframe, colorspace,
-                                                      pattern.edges, lower_color, upper_color, handsMP, log,
-                                                      tabledistance, pattern.logging, pattern.depth, timestamp, device,
+                                                      pattern, lower_color, upper_color, handsMP,
+                                                      tabledistance, timestamp, device,
                                                       transform_mat, min_samples, eps, cm_per_pix)
                         frame = hand_future.result()
                         irframe, prev_frame, prev_point, current_tui_setting = ir_future.result()
@@ -121,8 +121,8 @@ async def custom_frame_generator(pattern):
                 ##############
                 else:
                     frame = hand_lib_nn.hand_detection(frame, colorframe, colorspace,
-                                                      pattern.edges, lower_color, upper_color, handsMP, log,
-                                                      tabledistance, pattern.logging, pattern.depth, timestamp, device,
+                                                      pattern, lower_color, upper_color, handsMP,
+                                                      tabledistance, timestamp, device,
                                                       transform_mat, min_samples, eps, cm_per_pix)
                 ##### Mediapipe: visualize detections for debugging ###########
                 # resultsMP = handsMP.process(caliColorframe)

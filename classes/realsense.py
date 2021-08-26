@@ -52,7 +52,7 @@ class RealSense(Device):
             print("<*> Realsense device not found, loading: ", id)
             # Tell config that we will use a recorded device from filem to be used by the pipeline through playback.
             rs.config.enable_device_from_file(config, id)
-        config.enable_stream(rs.stream.color, 960,540, rs.format.rgb8, 30)
+        config.enable_stream(rs.stream.color, 1280, 720, rs.format.rgb8, 30)
         if not depth:
             config.enable_stream(rs.stream.depth, 1280, 720, rs.format.z16, 30)
         if ir:

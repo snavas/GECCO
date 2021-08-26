@@ -118,6 +118,7 @@ def ir_annotations(frame, colorframe, target_corners, device, prev_point, prev_f
         if point[0] != -1:
             color = current_tui_setting["color"]
             thickness = tui_dict[8]["thickness"]
+            # thickness is doubled for the eraser
             if color == (0,0,0):
                 thickness = thickness*2
             # draw point

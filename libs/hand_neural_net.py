@@ -4,11 +4,12 @@ import numpy as np
 from sklearn.cluster import DBSCAN
 import libs.utils as utils
 import math
+import libs.visHeight as height
 
 mp_hands = mp.solutions.hands
 mp_drawing = mp.solutions.drawing_utils
 
-def getHand(colorframe, colorspace, edges, lower_color, upper_color, handsMP, log, min_samples, eps, cm_per_pix):
+def getHand(colorframe, colorspace, pattern, lower_color, upper_color, handsMP, min_samples, eps, cm_per_pix):
     def calculateCenter(x1, y1, x2, y2):
         x = int((x2 - x1) / 2 + x1)
         y = int((y2 - y1) / 2 + y1)
@@ -161,12 +162,17 @@ def getHand(colorframe, colorspace, edges, lower_color, upper_color, handsMP, lo
                     ##################
                     # edge only mode #
                     ##################
-                    if edges:
+                    if pattern.edges:
+                        large_rect = (8, 15)
+                        rect = (8, 8)
+                        if not pattern.paper:
+                            large_rect = (15, 30)
+                            rect = (15, 15)
                         # Heavily dilated mask
-                        heavily_dilated = cv2.dilate(tempOut, cv2.getStructuringElement(cv2.MORPH_RECT, (15, 30)),
+                        heavily_dilated = cv2.dilate(tempOut, cv2.getStructuringElement(cv2.MORPH_RECT, large_rect),
                                                    iterations=3)
                         # A little less dilated mask
-                        dilated = cv2.dilate(tempOut, cv2.getStructuringElement(cv2.MORPH_RECT, (15, 15)),
+                        dilated = cv2.dilate(tempOut, cv2.getStructuringElement(cv2.MORPH_RECT, rect),
                                                     iterations=1)
 
                         # get a really dilated masked out hand, so that the edges dont have to be calculated for the entire image
@@ -179,13 +185,17 @@ def getHand(colorframe, colorspace, edges, lower_color, upper_color, handsMP, lo
                         # get contours of edges
                         contours, hierarchy = cv2.findContours(canny_output, cv2.RETR_TREE,
                                                                cv2.CHAIN_APPROX_SIMPLE)
-                        # draw the contours into the empty image
-                        for i in range(len(contours)):
-                            cv2.drawContours(hand_image, contours, i, (254, 254, 254), 3, cv2.LINE_8, hierarchy,
-                                             0)
+                        if not pattern.paper:
+                            # draw the contours into the empty image
+                            for i in range(len(contours)):
+                                cv2.drawContours(hand_image, contours, i, (254, 254, 254), 3, cv2.LINE_8, hierarchy,
+                                                 0)
 
-                        for i in range(len(contours)):
-                            cv2.drawContours(hand_image, contours, i, (1, 1, 1), 1, cv2.LINE_8, hierarchy, 0)
+                            for i in range(len(contours)):
+                                cv2.drawContours(hand_image, contours, i, (1, 1, 1), 1, cv2.LINE_8, hierarchy, 0)
+                        else:
+                            for i in range(len(contours)):
+                                cv2.drawContours(hand_image, contours, i, (254, 254, 254), 1, cv2.LINE_8, hierarchy, 0)
                         # mask out the outer edges, that belong to the more heavily dilated mask
                         result = cv2.bitwise_and(hand_image, hand_image, mask=dilated)
                         # comment this in, to see edges AND hand:
@@ -202,15 +212,15 @@ def getHand(colorframe, colorspace, edges, lower_color, upper_color, handsMP, lo
                     hands.append(hand)
     return hands, lower_color, upper_color
 
-def hand_detection(frame, caliColorframe, colorspace, edges, lower_color, upper_color, handsMP, log, tabledistance,
-                   logging, depth, timestamp, device, transform_mat, min_samples, eps, cm_per_pix):
-    hands, lower_color, upper_color = getHand(caliColorframe, colorspace, edges, lower_color, upper_color,
+def hand_detection(frame, caliColorframe, colorspace, pattern, lower_color, upper_color, handsMP, log, tabledistance,
+                   timestamp, device, transform_mat, min_samples, eps, cm_per_pix):
+    hands, lower_color, upper_color = getHand(caliColorframe, colorspace, pattern, lower_color, upper_color,
                                                           handsMP, log, min_samples, eps, cm_per_pix)
 
     # if hands were detected visualize them
     if len(hands) > 0:
         # if the depth is enabled read out the depth frame
-        if depth:
+        if pattern.depth:
             depthframe = device.getdepthstream()
             caliDepthframe = cv2.warpPerspective(depthframe, transform_mat, depthframe.shape[1:None:-1])
 
@@ -219,7 +229,7 @@ def hand_detection(frame, caliColorframe, colorspace, edges, lower_color, upper_
             hand_image = hand["hand_image"]
             # Altering hand colors (to avoid feedback loop
             # Option 1: Inverting the picture
-            if edges != True:
+            if pattern.edges != True:
                 hand_image = cv2.bitwise_not(hand_image, hand["mask"])
                 hand_image = cv2.bitwise_and(hand_image, hand_image, mask=hand["mask"])
             # Calculate hand centre
@@ -228,13 +238,13 @@ def hand_detection(frame, caliColorframe, colorspace, edges, lower_color, upper_
             cY = int(M["m01"] / M["m00"])
 
             # if depth is enabled also visualize and log the distance
-            if depth:
+            if pattern.depth:
                 handToTableDist = (float(tabledistance) - float(caliDepthframe[cY][cX])) / 100
 
                 if handToTableDist > 0 and handToTableDist < 10:
                     hand_image = height.visHeight(hand_image, handToTableDist)
 
-                if logging:
+                if pattern.logging:
                     cv2.circle(hand_image, (cX, cY), 4, utils.id_to_random_color(i), -1)
                     cv2.putText(hand_image, "  " + str(handToTableDist), (cX, cY),
                                 cv2.FONT_HERSHEY_SIMPLEX, 0.25, utils.id_to_random_color(i), 1, cv2.LINE_AA)
@@ -243,7 +253,7 @@ def hand_detection(frame, caliColorframe, colorspace, edges, lower_color, upper_
                      str(cY), "\n"]))
 
                 for f in hand["fingers"]:
-                    if logging:
+                    if pattern.logging:
                         cv2.circle(hand_image, f, 4, utils.id_to_random_color(i), -1)
                         cv2.putText(hand_image,
                                     "  " + str((float(tabledistance) - float(caliDepthframe[f[1]][f[0]])) / 100), f,
@@ -255,13 +265,13 @@ def hand_detection(frame, caliColorframe, colorspace, edges, lower_color, upper_
                         [str(timestamp), " ", str(float(tabledistance) - float(depthframe[cY][cX])), " P ", str(f[0]),
                          " ", str(f[1]), "\n"]))
             else:
-                if logging:
+                if pattern.logging:
                     cv2.circle(hand_image, (cX, cY), 4, utils.id_to_random_color(i), -1)
                 # record depth as "Null"
                 log.write(str(timestamp) + " Null H " + str(cX) + " " + str(
                     cY) + "\n")
                 for f in hand["fingers"]:
-                    if logging:
+                    if pattern.logging:
                         cv2.circle(hand_image, f, 4, utils.id_to_random_color(i), -1)
                     # record depth as "Null"
                     log.write(''.join([str(timestamp), " Null P ", str(f[0]), " ", str(
