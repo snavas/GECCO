@@ -17,7 +17,7 @@ class RealSense(Device):
         return self.ir_intr
 
     # overriding abstract method
-    def __init__(self, id, ir):
+    def __init__(self, id, depth, ir):
         ctx = rs.context()
         devices = ctx.query_devices()
         print("<*> Connected devices: ")
@@ -52,32 +52,32 @@ class RealSense(Device):
             print("<*> Realsense device not found, loading: ", id)
             # Tell config that we will use a recorded device from filem to be used by the pipeline through playback.
             rs.config.enable_device_from_file(config, id)
-        config.enable_stream(rs.stream.depth, 1280, 720, rs.format.z16, 30)
-        config.enable_stream(rs.stream.color, 1280, 720, rs.format.rgb8, 30)
+        config.enable_stream(rs.stream.color, 960,540, rs.format.rgb8, 30)
+        if not depth:
+            config.enable_stream(rs.stream.depth, 1280, 720, rs.format.z16, 30)
         if ir:
             config.enable_stream(rs.stream.infrared, 1280, 720)
 
         # Start streaming
         profile = self.pipeline.start(config)
         self.color_intr = profile.get_stream(rs.stream.color).as_video_stream_profile().get_intrinsics()
-        self.depth_intr = profile.get_stream(rs.stream.depth).as_video_stream_profile().get_intrinsics()
-
         if ir:
             self.ir_intr = profile.get_stream(rs.stream.infrared).as_video_stream_profile().get_intrinsics()
+        if not depth:
+            self.depth_intr = profile.get_stream(rs.stream.depth).as_video_stream_profile().get_intrinsics()
+            # Getting the depth sensor's depth scale (see rs-align example for explanation)
+            depth_sensor = profile.get_device().first_depth_sensor()
+            self.depth_scale = depth_sensor.get_depth_scale()
+            print("<*> Depth Scale is: ", self.depth_scale)
 
-        # Getting the depth sensor's depth scale (see rs-align example for explanation)
-        depth_sensor = profile.get_device().first_depth_sensor()
-        self.depth_scale = depth_sensor.get_depth_scale()
-        print("<*> Depth Scale is: ", self.depth_scale)
-
-        try:
-            # increase lase power
-            laser_range = depth_sensor.get_option_range(rs.option.laser_power)
-            depth_sensor.set_option(rs.option.laser_power, laser_range.max)
-            # turn off auto-exposure
-            depth_sensor.set_option(rs.option.enable_auto_exposure, False)
-        except Exception as e:
-            pass
+            try:
+                # increase lase power
+                laser_range = depth_sensor.get_option_range(rs.option.laser_power)
+                depth_sensor.set_option(rs.option.laser_power, laser_range.max)
+                # turn off auto-exposure
+                depth_sensor.set_option(rs.option.enable_auto_exposure, False)
+            except Exception as e:
+                pass
 
         # We will be removing the background of objects more than
         #  clipping_distance_in_meters meters away

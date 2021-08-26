@@ -6,7 +6,6 @@ import threading
 import time
 import tkinter as tk
 import traceback
-import math
 
 import asyncio
 import cv2
@@ -15,7 +14,6 @@ import numpy as np
 import win32api
 import win32con
 import win32gui
-from cv2 import aruco
 from vidgear.gears.asyncio import NetGear_Async
 from win32api import GetSystemMetrics
 
@@ -43,19 +41,12 @@ handsMP = mp_hands.Hands(
 # init ir_frame
 irframe = np.array([])
 
-def angle(pt1,pt2):
-    m1 = (pt1[0] - pt1[0])/1
-    m2 = (pt2[0] - pt1[0])/(pt2[1]-pt1[1])
-
-    tnAngle = (m1-m2)/(1+(m1*m2))
-    return math.atan(tnAngle)
-
 # Create a async frame generator as custom source
 async def custom_frame_generator(pattern):
     try:
         tabledistance = 1200  # Default distance to table
         # Open video stream
-        device = RealSense(DeviceSrc, pattern.iranno)
+        device = RealSense(DeviceSrc, pattern.depth, pattern.iranno)
         # open log file and write header
         log = open("logs/log_" + str(int(time.time())) + ".log", "x")
         log.write("timestamp height class x y" + "\n")
@@ -113,29 +104,9 @@ async def custom_frame_generator(pattern):
                 # IR Annotations + Hands #
                 ##########################
                 if (pattern.iranno):
-                    # look for aruco codes (more easily detected in black and white images)
-                    gray = cv2.cvtColor(colorframe, cv2.COLOR_BGR2GRAY)
-                    aruco_dict = aruco.Dictionary_get(aruco.DICT_4X4_250)
-                    parameters = aruco.DetectorParameters_create()
-                    corners, ids, rejectedImgPoints = aruco.detectMarkers(gray, aruco_dict, parameters=parameters)
-
-                    # if aruco codes have been found
-                    if ids is not None:
-                        for i in range(len(ids)): # loop through all detections
-                            for key in tui_dict.keys(): # loop through all codes
-                                # save the position of the detected codes
-                                if ids[i] == key:
-                                    if key == 8:
-                                        angle_code = angle((corners[i][0][0][0], corners[i][0][0][1]),(corners[i][0][2][0], corners[i][0][2][1]))*180/math.pi
-                                        angle_screen = angle((target_corners[0][0], target_corners[0][1]), (target_corners[2][0], target_corners[2][1])) * 180 / math.pi
-                                        angle_lines = abs(angle_code - angle_screen)
-                                        if math.isnan(angle_lines) != True:
-                                            tui_dict[key]['thickness'] = int(max(20*(angle_lines/360), 1.0))
-                                    else:
-                                        tui_dict[key]["edges"] = corners[i][0].astype('int32')
-                # simultaneously detect hands and do the ir drawings
+                    # simultaneously detect hands and do the ir drawings
                     with concurrent.futures.ThreadPoolExecutor() as executor:
-                        ir_future = executor.submit(infrared.ir_annotations, frame, target_corners, device, prev_point,
+                        ir_future = executor.submit(infrared.ir_annotations, frame, colorframe, target_corners, device, prev_point,
                                                     prev_frame, current_tui_setting, tui_dict, cm_per_pix)
                         hand_future = executor.submit(hand_lib_nn.hand_detection, frame, colorframe, colorspace,
                                                       pattern.edges, lower_color, upper_color, handsMP, log,
@@ -149,8 +120,10 @@ async def custom_frame_generator(pattern):
                 # Just Hands #
                 ##############
                 else:
-                    frame = hand_lib_nn.hand_detection(frame, colorframe, colorspace, pattern.edges, lower_color, upper_color, handsMP, log,
-                               tabledistance, pattern.logging, pattern.depth, timestamp, device, transform_mat, min_samples, eps)
+                    frame = hand_lib_nn.hand_detection(frame, colorframe, colorspace,
+                                                      pattern.edges, lower_color, upper_color, handsMP, log,
+                                                      tabledistance, pattern.logging, pattern.depth, timestamp, device,
+                                                      transform_mat, min_samples, eps, cm_per_pix)
                 ##### Mediapipe: visualize detections for debugging ###########
                 # resultsMP = handsMP.process(caliColorframe)
                 # if resultsMP.multi_hand_landmarks:
