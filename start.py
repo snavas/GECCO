@@ -107,7 +107,7 @@ async def custom_frame_generator(pattern):
                     # simultaneously detect hands and do the ir drawings
                     with concurrent.futures.ThreadPoolExecutor() as executor:
                         ir_future = executor.submit(infrared.ir_annotations, frame, colorframe, target_corners, device, prev_point,
-                                                    prev_frame, current_tui_setting, tui_dict, cm_per_pix)
+                                                    prev_frame, current_tui_setting, tui_dict, cm_per_pix, transform_mat)
                         hand_future = executor.submit(hand_lib_nn.hand_detection, frame, colorframe, colorspace,
                                                       pattern, lower_color, upper_color, handsMP, log,
                                                       tabledistance, timestamp, device,

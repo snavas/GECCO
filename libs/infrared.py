@@ -3,17 +3,18 @@ import numpy as np
 import math
 from cv2 import aruco
 
+
+def calc_radians(ab):
+    if ab > math.pi:
+        return ab + (-2 * math.pi)
+    else:
+        if ab < 0 - math.pi:
+            return ab + (2 * math.pi)
+        else:
+            return ab + 0
+
 def angle(A1, A2, B1, B2):
     """Calculates the signed angle between two lines (A and B)."""
-
-    def calc_radians(ab):
-        if ab > math.pi:
-            return ab + (-2 * math.pi)
-        else:
-            if ab < 0 - math.pi:
-                return ab + (2 * math.pi)
-            else:
-                return ab + 0
 
     AhAB = math.atan2((B2[0] - B1[0]), (B2[1] - B1[1]))
     AhAO = math.atan2((A2[0] - A1[0]), (A2[1] - A1[1]))
@@ -49,7 +50,7 @@ def detect(irframe, cm_per_pix):
                 break
     return (cX,cY)
 
-def ir_annotations(frame, colorframe, target_corners, device, prev_point, prev_frame, current_tui_setting, tui_dict, cm_per_pix):
+def ir_annotations(frame, colorframe, target_corners, device, prev_point, prev_frame, current_tui_setting, tui_dict, cm_per_pix, transform_mat):
     # look for aruco codes (more easily detected in black and white images)
     gray = cv2.cvtColor(colorframe, cv2.COLOR_BGR2GRAY)
     aruco_dict = aruco.Dictionary_get(aruco.DICT_4X4_250)
@@ -128,4 +129,28 @@ def ir_annotations(frame, colorframe, target_corners, device, prev_point, prev_f
                 cv2.line(prev_frame, prev_point, point, color, thickness)
     prev_point = point
     frame = cv2.bitwise_or(frame, prev_frame)
-    return cv2.bitwise_or(frame, prev_frame), prev_frame, prev_point, current_tui_setting
+
+    ##############################
+    # draw switch point for knob #
+    ##############################
+    #calculate center of the aruco code
+    x_sum = tui_dict[8]["edges"][0][0] + tui_dict[8]["edges"][1][0] + tui_dict[8]["edges"][2][0] + \
+            tui_dict[8]["edges"][3][0]
+    y_sum = tui_dict[8]["edges"][0][1] + tui_dict[8]["edges"][1][1] + tui_dict[8]["edges"][2][1] + \
+            tui_dict[8]["edges"][3][1]
+    x_center = x_sum * .25
+    y_center = y_sum * .25
+    # calculate vertical vector
+    v_x = (target_corners[1][0] - target_corners[0][0])
+    v_y = (target_corners[1][1] - target_corners[0][1])
+    mag = math.sqrt(v_x * v_x + v_y * v_y)
+    v_x = v_x / mag
+    v_y = v_y / mag
+    # calculate coordinates of switch point
+    switch_x = x_center + v_x * 35
+    switch_y = y_center + v_y * 35
+    # draw switch point
+    cv2.circle(frame, (int(switch_x), int(switch_y)), int(tui_dict[8]["thickness"]/2), current_tui_setting["color"], -1)
+    #############################
+
+    return frame, prev_frame, prev_point, current_tui_setting

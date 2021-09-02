@@ -16,7 +16,7 @@ tui_dict = {
         [0, 0],
         [0, 0]]], dtype='uint8'),
         "inside": 1.0
-    }, # black pen
+    },
     2: {
         "color": (3, 3, 200),
         "edges": np.array([[[0, 0],
@@ -42,7 +42,7 @@ tui_dict = {
         "inside": 1.0
     },
     5: {
-        "color": (255, 255, 255),
+        "color": (120, 120, 120),
         "edges": np.array([[[0, 0],
         [0, 0],
         [0, 0],
