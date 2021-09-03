@@ -48,7 +48,8 @@ async def custom_frame_generator(pattern):
         # Open video stream
         device = RealSense(DeviceSrc, pattern.depth, pattern.iranno)
         # open log file and write header
-        log = open("logs/log_" + str(int(time.time())) + ".log", "x")
+        log_time = str(int(time.time()))
+        log = open("logs/log_" + log_time + ".log", "x")
         log.write("timestamp height class x y" + "\n")
         # initialize corners
         transform_mat = np.array([])
@@ -89,6 +90,10 @@ async def custom_frame_generator(pattern):
                 # if all four target corners have been found create the transformation matrix
                 if len(target_corners) == 4:
                     transform_mat = cv2.getPerspectiveTransform(target_corners, screen_corners)
+                    # save a picture of the initial paper plan
+                    if pattern.paper:
+                        frame = cv2.warpPerspective(colorframe, transform_mat, colorframe.shape[1:None:-1])
+                        cv2.imwrite('C:/Users/sitcom/Documents/GitHub/GECCO/logs/log_' + log_time + '.jpg', frame)
                     # if depth mode is activated also read the depth frame and measure the table distance
                     if pattern.depth:
                         depthframe = device.getdepthstream()
