@@ -130,6 +130,8 @@ def ir_annotations(frame, colorframe, target_corners, device, prev_point, prev_f
     prev_point = point
     frame = cv2.bitwise_or(frame, prev_frame)
 
+    color = current_tui_setting["color"]
+
     ##############################
     # draw switch point for knob #
     ##############################
@@ -150,7 +152,10 @@ def ir_annotations(frame, colorframe, target_corners, device, prev_point, prev_f
     switch_x = x_center + v_x * 35
     switch_y = y_center + v_y * 35
     # draw switch point
-    cv2.circle(frame, (int(switch_x), int(switch_y)), int(tui_dict[8]["thickness"]/2), current_tui_setting["color"], -1)
+    if color != (0,0,0):
+        cv2.circle(frame, (int(switch_x), int(switch_y)), int(tui_dict[8]["thickness"]/2), color, -1)
+    else:
+        cv2.circle(frame, (int(switch_x), int(switch_y)), int(tui_dict[8]["thickness"]), (120, 120, 120), 1, -1)
     #############################
 
     return frame, prev_frame, prev_point, current_tui_setting
