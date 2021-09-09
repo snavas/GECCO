@@ -6,11 +6,13 @@ aruco_dict = aruco.Dictionary_get(aruco.DICT_4X4_250)
 parameters = aruco.DetectorParameters_create()
 parameters.errorCorrectionRate = 0.7
 
-def calculateCenter(x1,y1,x2,y2):
-    center = [-1,-1]
-    center[0] = int((x2 - x1)/2 + x1)
-    center[1] = int((y2 - y1)/2 + y1)
+
+def calculateCenter(x1, y1, x2, y2):
+    center = [-1, -1]
+    center[0] = int((x2 - x1) / 2 + x1)
+    center[1] = int((y2 - y1) / 2 + y1)
     return center
+
 
 def getColorBetweenMarkers(image, colorMarkers):
     x1 = int(colorMarkers[0][0][0])
@@ -19,6 +21,7 @@ def getColorBetweenMarkers(image, colorMarkers):
     y2 = int(colorMarkers[1][0][1])
     center = calculateCenter(x1, y1, x2, y2)
     return np.array(image[center[1], center[0]])
+
 
 def detectcolorFlat(colorframe, lower_color, upper_color):
     grey = cv2.cvtColor(colorframe, cv2.COLOR_RGB2GRAY)
@@ -44,6 +47,7 @@ def detectcolorFlat(colorframe, lower_color, upper_color):
 
     return lower_color, upper_color
 
+
 def getUpperLowerSquare(colorMarkers, colorframe, colorspace):
     x1 = int(colorMarkers[0][0][0])
     y1 = int(colorMarkers[0][0][1])
@@ -65,8 +69,9 @@ def getUpperLowerSquare(colorMarkers, colorframe, colorspace):
         [hsvRoi[:, :, 0].min() - 3, hsvRoi[:, :, 1].min() - 3, hsvRoi[:, :, 2].min() - 3])
     upper = np.array(
         [hsvRoi[:, :, 0].max() + 3, hsvRoi[:, :, 1].max() + 3, hsvRoi[:, :, 2].max() + 3])
-    
+
     return lower, upper
+
 
 def getUpperLowerCircle(colorMarkers, colorframe, colorspace):
     x1 = int(colorMarkers[0][0][0])
@@ -77,9 +82,8 @@ def getUpperLowerCircle(colorMarkers, colorframe, colorspace):
 
     colorframe = cv2.cvtColor(colorframe, colorspace)
 
-    r = 15
     mask = np.zeros(colorframe.shape[:2], dtype="uint8")
-    cv2.circle(mask, (center[0], center[1]), r, 255, -1)
+    cv2.circle(mask, (center[0], center[1]), 15, 255, -1)
     roi = cv2.bitwise_and(colorframe, colorframe, mask=mask)
 
     upper = np.array(
@@ -88,9 +92,10 @@ def getUpperLowerCircle(colorMarkers, colorframe, colorspace):
     second = roi[:, :, 1]
     third = roi[:, :, 2]
     lower = np.array(
-        [np.min(first[first!=0]), np.min(second[second!=0]),
-         np.min(third[third!=0])])
+        [np.min(first[first != 0]), np.min(second[second != 0]),
+         np.min(third[third != 0])])
     return lower, upper
+
 
 def detectcolor3D(colorframe, lower_color, upper_color, colorspace):
     grey = cv2.cvtColor(colorframe, cv2.COLOR_RGB2GRAY)
@@ -112,11 +117,11 @@ def detectcolor3D(colorframe, lower_color, upper_color, colorspace):
         lower_colorA, upper_colorA = getUpperLowerCircle(colorMarkersA, colorframe, colorspace)
         lower_colorB, upper_colorB = getUpperLowerCircle(colorMarkersB, colorframe, colorspace)
         lower_color = np.array([min(lower_colorA[0], lower_colorB[0]),
-                               min(lower_colorA[1], lower_colorB[1]),
-                               min(lower_colorA[2], lower_colorB[2])])
+                                min(lower_colorA[1], lower_colorB[1]),
+                                min(lower_colorA[2], lower_colorB[2])])
         upper_color = np.array([max(upper_colorA[0], upper_colorB[0]),
-                               max(upper_colorA[1], upper_colorB[1]),
-                               max(upper_colorA[2], upper_colorB[2])])
+                                max(upper_colorA[1], upper_colorB[1]),
+                                max(upper_colorA[2], upper_colorB[2])])
     elif len(colorMarkersA) == 2:
         lower_color, upper_color = getUpperLowerCircle(colorMarkersA, colorframe, colorspace)
     elif len(colorMarkersB) == 2:

@@ -9,6 +9,7 @@ import libs.visHeight as height
 mp_hands = mp.solutions.hands
 mp_drawing = mp.solutions.drawing_utils
 
+
 def getHand(colorframe, colorspace, pattern, lower_color, upper_color, handsMP, min_samples, eps, cm_per_pix):
     def calculateCenter(x1, y1, x2, y2):
         x = int((x2 - x1) / 2 + x1)
@@ -59,8 +60,8 @@ def getHand(colorframe, colorspace, pattern, lower_color, upper_color, handsMP, 
             # get the color and extent of all detected joints
             for landmark in landmarks:
                 # get the position of the detection (has to be smaller than the maximum extent)
-                x = min(math.floor(landmark.x * image_cols), image_cols-1)
-                y = min(math.floor(landmark.y * image_rows), image_rows-1)
+                x = min(math.floor(landmark.x * image_cols), image_cols - 1)
+                y = min(math.floor(landmark.y * image_rows), image_rows - 1)
                 # get the color at this detection
                 color_detection = detectionFrame[y, x]
                 curr_detections.append(color_detection)
@@ -75,7 +76,7 @@ def getHand(colorframe, colorspace, pattern, lower_color, upper_color, handsMP, 
                     minY = y
                 landmark.x = x
                 landmark.y = y
-                points.append((x,y))
+                points.append((x, y))
             # also get the color from points in between joints
             for connection in mp_hands.HAND_CONNECTIONS:
                 start_idx = connection[0]
@@ -83,17 +84,17 @@ def getHand(colorframe, colorspace, pattern, lower_color, upper_color, handsMP, 
                 start_point = landmarks[start_idx]
                 end_point = landmarks[end_idx]
                 # get the middle between the joints
-                x,y = calculateCenter(start_point.x, start_point.y, end_point.x, end_point.y)
+                x, y = calculateCenter(start_point.x, start_point.y, end_point.x, end_point.y)
                 # get the color at this detection
                 color_detection = detectionFrame[y, x]
                 curr_detections.append(color_detection)
-            width = maxX-minX
-            height = maxY-minY
+            width = maxX - minX
+            height = maxY - minY
             # enlarge the extent by 10 to 20 percent
-            maxX = min(image_cols, maxX + math.floor((width/image_cols)*200))
-            maxY = min(image_rows, maxY + math.floor((height/image_rows)*100))
-            minX = max(0, minX - math.floor((width/image_cols)*200))
-            minY = max(0, minY - math.floor((height/image_rows)*100))
+            maxX = min(image_cols, maxX + math.floor((width / image_cols) * 200))
+            maxY = min(image_rows, maxY + math.floor((height / image_rows) * 100))
+            minX = max(0, minX - math.floor((width / image_cols) * 200))
+            minY = max(0, minY - math.floor((height / image_rows) * 100))
             crop_img = colorframe[minY:maxY, minX:maxX]
 
             ########################### COLOR DETECTION ####################################
@@ -135,29 +136,32 @@ def getHand(colorframe, colorspace, pattern, lower_color, upper_color, handsMP, 
                 contours, hierarchy = cv2.findContours(handmask, mode, method)
                 # initialize hand object
                 hand = {
-                    "contour": np.empty(shape=(0,1,2), dtype=np.uint8),
+                    "contour": np.empty(shape=(0, 1, 2), dtype=np.uint8),
                     "fingers": points,
                     "mask": np.zeros_like(handmask)
                 }
                 for c in contours:
                     # contours are only valid if they are larger than 44cm2
-                    if cv2.contourArea(c) > (44/(cm_per_pix*cm_per_pix)):
+                    if cv2.contourArea(c) > (44 / (cm_per_pix * cm_per_pix)):
                         rHull = getRoughHull(c)
                         if rHull is not None:
                             hand_contours.append(c)
-                            tempMask = np.zeros_like(handmask)  # Create mask where white is what we want, black otherwise
+                            tempMask = np.zeros_like(
+                                handmask)  # Create mask where white is what we want, black otherwise
                             cv2.drawContours(tempMask, [c], -1, 255, -1)  # Draw filled contour in mask
                             tempOut = np.zeros_like(handmask)  # Extract out the object and place into output image
                             tempOut[tempMask == 255] = handmask[tempMask == 255]
                             # dilate and erode to remove holes
-                            tempOut = cv2.dilate(tempOut, cv2.getStructuringElement(cv2.MORPH_RECT, (9, 9)), iterations=1)
-                            tempOut = cv2.erode(tempOut, cv2.getStructuringElement(cv2.MORPH_RECT, (6, 6)), iterations=1)
+                            tempOut = cv2.dilate(tempOut, cv2.getStructuringElement(cv2.MORPH_RECT, (9, 9)),
+                                                 iterations=1)
+                            tempOut = cv2.erode(tempOut, cv2.getStructuringElement(cv2.MORPH_RECT, (6, 6)),
+                                                iterations=1)
 
                             if c.shape != (0,):
                                 hand["contour"] = np.concatenate((hand["contour"], c))
                             hand["mask"] = cv2.bitwise_or(hand["mask"], tempOut)
                 # if there is a contour there is also a hand
-                if hand["contour"].shape != (0,1,2):
+                if hand["contour"].shape != (0, 1, 2):
                     copy = colorframe.copy()
                     ##################
                     # edge only mode #
@@ -170,10 +174,10 @@ def getHand(colorframe, colorspace, pattern, lower_color, upper_color, handsMP, 
                             rect = (15, 15)
                         # Heavily dilated mask
                         heavily_dilated = cv2.dilate(tempOut, cv2.getStructuringElement(cv2.MORPH_RECT, large_rect),
-                                                   iterations=3)
+                                                     iterations=3)
                         # A little less dilated mask
                         dilated = cv2.dilate(tempOut, cv2.getStructuringElement(cv2.MORPH_RECT, rect),
-                                                    iterations=1)
+                                             iterations=1)
 
                         # get a really dilated masked out hand, so that the edges dont have to be calculated for the entire image
                         hand_image = cv2.bitwise_and(copy, copy, mask=heavily_dilated)
@@ -212,10 +216,11 @@ def getHand(colorframe, colorspace, pattern, lower_color, upper_color, handsMP, 
                     hands.append(hand)
     return hands, lower_color, upper_color
 
+
 def hand_detection(frame, caliColorframe, colorspace, pattern, lower_color, upper_color, handsMP, log, tabledistance,
                    timestamp, device, transform_mat, min_samples, eps, cm_per_pix):
     hands, lower_color, upper_color = getHand(caliColorframe, colorspace, pattern, lower_color, upper_color,
-                                                          handsMP, min_samples, eps, cm_per_pix)
+                                              handsMP, min_samples, eps, cm_per_pix)
 
     # if hands were detected visualize them
     if len(hands) > 0:

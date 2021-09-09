@@ -12,16 +12,18 @@ import libs.utils as utils
 lower_color = np.array([110, 80, 80])
 upper_color = np.array([170, 255, 255])
 
+
 def angle(vector1, vector2):
     length1 = math.sqrt(vector1[0] * vector1[0] + vector1[1] * vector1[1])
     length2 = math.sqrt(vector2[0] * vector2[0] + vector2[1] * vector2[1])
-    return math.acos((vector1[0] * vector2[0] + vector1[1] * vector2[1])/ (length1 * length2))
+    return math.acos((vector1[0] * vector2[0] + vector1[1] * vector2[1]) / (length1 * length2))
+
 
 def getHand(colorframe, uncaliColorframe, colorspace, edges, lower_color, upper_color):
     def gethandmask(img, lower_color, upper_color):
         # Convert BGR to given colorspace
         colorConverted = cv2.cvtColor(img, colorspace)
-        lower_color,upper_color = color.detectcolor3D(uncaliColorframe, lower_color, upper_color, colorspace)
+        lower_color, upper_color = color.detectcolor3D(uncaliColorframe, lower_color, upper_color, colorspace)
         # Threshold the image
         mask = cv2.inRange(colorConverted, lower_color, upper_color)
         # https://opencv-python-tutroals.readthedocs.io/en/latest/py_tutorials/py_imgproc/py_filtering/py_filtering.html
@@ -124,10 +126,12 @@ def getHand(colorframe, uncaliColorframe, colorspace, edges, lower_color, upper_
                 if edges:
                     hand["dilated_masks"] = []
                     # Heavily dilated
-                    tempOutDilBig = cv2.dilate(tempOut, cv2.getStructuringElement(cv2.MORPH_RECT, (20, 25)), iterations=1)
+                    tempOutDilBig = cv2.dilate(tempOut, cv2.getStructuringElement(cv2.MORPH_RECT, (20, 25)),
+                                               iterations=1)
                     hand["dilated_masks"].append(tempOutDilBig)
                     # A little less dilated
-                    tempOutDilSmol = cv2.dilate(tempOut, cv2.getStructuringElement(cv2.MORPH_RECT, (15, 20)), iterations=1)
+                    tempOutDilSmol = cv2.dilate(tempOut, cv2.getStructuringElement(cv2.MORPH_RECT, (15, 20)),
+                                                iterations=1)
                     hand["dilated_masks"].append(tempOutDilSmol)
                 hands.append(hand)
         return hands
@@ -136,7 +140,7 @@ def getHand(colorframe, uncaliColorframe, colorspace, edges, lower_color, upper_
     # Function body
     ###################################################
     handMask, lower_color, upper_color = gethandmask(colorframe, lower_color, upper_color)  # hand mask
-    hands = getcontourmask(handMask) # divide the big mask into individual hand masks and contours
+    hands = getcontourmask(handMask)  # divide the big mask into individual hand masks and contours
     for hand in hands:
         copy = colorframe.copy()
         # edge only mode
@@ -152,10 +156,10 @@ def getHand(colorframe, uncaliColorframe, colorspace, edges, lower_color, upper_
             contours, hierarchy = cv2.findContours(canny_output, cv2.RETR_TREE, cv2.CHAIN_APPROX_SIMPLE)
             # draw the contours into the empty image
             for i in range(len(contours)):
-                cv2.drawContours(hand_image, contours, i, (254,254,254), 3, cv2.LINE_8, hierarchy, 0)
+                cv2.drawContours(hand_image, contours, i, (254, 254, 254), 3, cv2.LINE_8, hierarchy, 0)
 
             for i in range(len(contours)):
-                cv2.drawContours(hand_image, contours, i, (1,1,1), 1, cv2.LINE_8, hierarchy, 0)
+                cv2.drawContours(hand_image, contours, i, (1, 1, 1), 1, cv2.LINE_8, hierarchy, 0)
             # mask out the outer edges, that belong to the more heavily dilated mask
             hand_image = cv2.bitwise_and(hand_image, hand_image, mask=hand["dilated_masks"][1])
             # comment this in, to see edges and hand:

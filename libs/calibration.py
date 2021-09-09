@@ -3,6 +3,7 @@ from cv2 import aruco
 import numpy as np
 from scipy.spatial import distance as dist
 
+
 def calibrateViaRedSquares(originalframe, segmentedframe, matrix):
     hsv = cv2.cvtColor(originalframe, cv2.COLOR_BGR2HSV)
     lower_yellow = np.array([0, 50, 50])
@@ -33,7 +34,7 @@ def calibrateViaRedSquares(originalframe, segmentedframe, matrix):
         x2 = x1 + bw_stats[i, cv2.CC_STAT_WIDTH]
         y2 = y1 + bw_stats[i, cv2.CC_STAT_HEIGHT]
         size = bw_stats[i, cv2.CC_STAT_AREA]
-        if (size > minPixSize and size < 2000):
+        if size > minPixSize and size < 2000:
             center, radius = cv2.minEnclosingCircle(np.array([(x1, y1), (x1, y2), (x2, y1), (x2, y2)]))
             color = (0, 0, 255)
             cv2.circle(segmentedframe, (x1, y1), 2, color, 2)
@@ -48,11 +49,12 @@ def calibrateViaRedSquares(originalframe, segmentedframe, matrix):
                     cv2.LINE_AA)
         matrix = squares
     elif len(matrix) == 4:
-        cv2.putText(segmentedframe, "CALIBRATED (OLD)", (25, 25), cv2.FONT_HERSHEY_SIMPLEX, 0.25, (0, 255, 255), 1, cv2.LINE_AA)
+        cv2.putText(segmentedframe, "CALIBRATED (OLD)", (25, 25), cv2.FONT_HERSHEY_SIMPLEX, 0.25, (0, 255, 255), 1,
+                    cv2.LINE_AA)
     else:
-        cv2.putText(segmentedframe, "NOT CALIBRATED", (25, 25), cv2.FONT_HERSHEY_SIMPLEX, 0.25, (0, 0, 255), 1, cv2.LINE_AA)
+        cv2.putText(segmentedframe, "NOT CALIBRATED", (25, 25), cv2.FONT_HERSHEY_SIMPLEX, 0.25, (0, 0, 255), 1,
+                    cv2.LINE_AA)
     return segmentedframe, matrix
-
 
 
 def calibrateViaARUco(originalframe):

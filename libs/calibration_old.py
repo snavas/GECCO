@@ -1,15 +1,14 @@
 import cv2
 import numpy as np
 
+
 def getDraw(originalframe, segmentedframe, matrix):
     hsv = cv2.cvtColor(originalframe, cv2.COLOR_BGR2HSV)
-    #lower_orange = np.array([5, 50, 50], np.uint8)
-    #upper_orange = np.array([15, 255, 255], np.uint8)
+    # lower_orange = np.array([5, 50, 50], np.uint8)
+    # upper_orange = np.array([15, 255, 255], np.uint8)
     lower_red = np.array([0, 50, 50])
     upper_red = np.array([5, 255, 255])
     mask = cv2.inRange(hsv, lower_red, upper_red)
-
-
 
     res = cv2.bitwise_and(originalframe, originalframe, mask=mask)
     imgray = cv2.cvtColor(res, cv2.COLOR_BGR2GRAY)
@@ -30,10 +29,9 @@ def getDraw(originalframe, segmentedframe, matrix):
                     cv2.LINE_AA)
         matrix = squares
     elif len(matrix) == 4:
-        cv2.putText(segmentedframe, "CALIBRATED (OLD)", (25, 25), cv2.FONT_HERSHEY_SIMPLEX, 0.25, (0, 255, 255), 1, cv2.LINE_AA)
+        cv2.putText(segmentedframe, "CALIBRATED (OLD)", (25, 25), cv2.FONT_HERSHEY_SIMPLEX, 0.25, (0, 255, 255), 1,
+                    cv2.LINE_AA)
     else:
-        cv2.putText(segmentedframe, "NOT CALIBRATED", (25, 25), cv2.FONT_HERSHEY_SIMPLEX, 0.25, (0, 0, 255), 1, cv2.LINE_AA)
+        cv2.putText(segmentedframe, "NOT CALIBRATED", (25, 25), cv2.FONT_HERSHEY_SIMPLEX, 0.25, (0, 0, 255), 1,
+                    cv2.LINE_AA)
     return segmentedframe, matrix
-
-
-

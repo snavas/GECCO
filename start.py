@@ -41,8 +41,13 @@ handsMP = mp_hands.Hands(
 # init ir_frame
 irframe = np.array([])
 
-# Create a async frame generator as custom source
+
 async def custom_frame_generator(pattern):
+    """Create a async frame generator as custom source using given parameters.
+
+    Keyword arguments:
+    pattern -- the given parameters (see readme)
+    """
     try:
         tabledistance = 1200  # Default distance to table
         # Open video stream
@@ -108,11 +113,13 @@ async def custom_frame_generator(pattern):
                 ##########################
                 # IR Annotations + Hands #
                 ##########################
-                if (pattern.iranno):
+                if pattern.iranno:
                     # simultaneously detect hands and do the ir drawings
                     with concurrent.futures.ThreadPoolExecutor() as executor:
-                        ir_future = executor.submit(infrared.ir_annotations, frame, colorframe, target_corners, device, prev_point,
-                                                    prev_frame, current_tui_setting, tui_dict, cm_per_pix, transform_mat)
+                        ir_future = executor.submit(infrared.ir_annotations, frame, colorframe, target_corners, device,
+                                                    prev_point,
+                                                    prev_frame, current_tui_setting, tui_dict, cm_per_pix,
+                                                    transform_mat)
                         hand_future = executor.submit(hand_lib_nn.hand_detection, frame, colorframe, colorspace,
                                                       pattern, lower_color, upper_color, handsMP, log,
                                                       tabledistance, timestamp, device,
@@ -126,9 +133,9 @@ async def custom_frame_generator(pattern):
                 ##############
                 else:
                     frame = hand_lib_nn.hand_detection(frame, colorframe, colorspace,
-                                                      pattern, lower_color, upper_color, handsMP, log,
-                                                      tabledistance, timestamp, device,
-                                                      transform_mat, min_samples, eps, cm_per_pix)
+                                                       pattern, lower_color, upper_color, handsMP, log,
+                                                       tabledistance, timestamp, device,
+                                                       transform_mat, min_samples, eps, cm_per_pix)
                 ##### Mediapipe: visualize detections for debugging ###########
                 # resultsMP = handsMP.process(caliColorframe)
                 # if resultsMP.multi_hand_landmarks:
@@ -169,7 +176,7 @@ async def client_iterator(client, pattern):
                 # do something with received frames here
                 # print("frame recieved")
                 # Show output window
-                if (pattern.iranno):
+                if pattern.iranno:
                     global irframe
                     if irframe.shape != (0,):
                         frame = frame.astype("uint8")
@@ -181,7 +188,7 @@ async def client_iterator(client, pattern):
                 win32gui.SetWindowPos(hwnd, win32con.HWND_TOPMOST, 0, 0, GetSystemMetrics(0), GetSystemMetrics(1),
                                       0)  # always on top
                 win32gui.ShowWindow(hwnd, win32con.SW_MAXIMIZE)  # maximiced
-                if pattern.paper == False:
+                if not pattern.paper:
                     win32gui.SetLayeredWindowAttributes(hwnd, win32api.RGB(0, 0, 0), 0,
                                                         win32con.LWA_COLORKEY)  # black as transparent
                 key = cv2.waitKey(1) & 0xFF
@@ -194,7 +201,8 @@ async def client_iterator(client, pattern):
 async def netgear_async_playback(pattern):
     try:
         # define and launch Client with `receive_mode = True`
-        server = NetGear_Async(address=PeerAddress, port=PeerPort, logging=pattern.logging, source=None)  # invalid protocol
+        server = NetGear_Async(address=PeerAddress, port=PeerPort, logging=pattern.logging,
+                               source=None)  # invalid protocol
         server.config["generator"] = custom_frame_generator(pattern)
         server.launch()
         # define and launch Client with `receive_mode = True` and timeout = 5.0
