@@ -23,7 +23,7 @@ jobs:
     - name: Install dependencies
       run: |
         python -m pip install --upgrade pip
-        conda -v
+        conda info
         conda create --name testenv
         source activate testenv
         pip install flake8 pytest
