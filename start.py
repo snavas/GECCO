@@ -41,6 +41,8 @@ handsMP = mp_hands.Hands(
 # init ir_frame
 irframe = np.array([])
 
+if sys.platform == 'win32':
+    asyncio.set_event_loop_policy(asyncio.WindowsSelectorEventLoopPolicy())
 
 async def custom_frame_generator(pattern):
     """Create a async frame generator as custom source using given parameters.

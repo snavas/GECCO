@@ -18,7 +18,7 @@ The GECCO prototype consists of two twin tabletop systems equipped with a depth 
 ## Requirements
 - [pyrealsense2](https://github.com/IntelRealSense/librealsense/tree/master/wrappers/python)
 
-GECCO is implemented to work by default using Intel Real Sense D415 and D430 sensors. The pyrealsense2 package is Intel's RealSense SDK 2.0 python wrapper. You can install pyrealsense via pip if using a Python version up to 3.7.
+GECCO is implemented to work by default using Intel Real Sense D415 and D430 sensors. The pyrealsense2 package is Intel's RealSense SDK 2.0 python wrapper. You can install pyrealsense via pip along with the other code dependencies (see Dependencies entry).
 ```
 pip install pyrealsense2
 ```
@@ -30,6 +30,10 @@ https://github.com/IntelRealSense/librealsense/tree/master/wrappers/python#build
 All dependencies are listed in the ```requirements.txt``` and can be installed from the console with the following command: 
 
 ```pip install -r requirements.txt ```
+
+If you get an error that win32api could not be imported, try installing pywin32 it via conda:
+
+```conda install pywin32```
 
 ## Installation
 ```
