@@ -26,13 +26,14 @@ from dicts.colorspace_dict import colorspace_dict
 from dicts.tui_dict import tui_dict
 
 # init mediapipe hand detection parameters
-min_detection_confidence = 0.35
-min_tracking_confidence = 0.3
+min_detection_confidence = 0.28
+min_tracking_confidence = 0.22
 min_samples = 3
 eps = 30
 # init mediapipe
 mp_drawing = mp.solutions.drawing_utils
 mp_hands = mp.solutions.hands
+# check meaning of parameters here: https://google.github.io/mediapipe/solutions/hands.html#solution-apis
 handsMP = mp_hands.Hands(
     min_detection_confidence=min_detection_confidence,
     min_tracking_confidence=min_tracking_confidence,
@@ -252,8 +253,16 @@ def getOptions(args=sys.argv[1:]):
     options = parser.parse_args(args)
     return options
 
+##########################################################################################
+# tkinter GUI                                                                            #
+##########################################################################################
+# It would be nice to have this in a separate file,
+# but that is a bit complicated because the gui controls global variables in this file
 
-def set_valueA(val):
+def set_detection_confidence(val):
+    """
+    Minimum confidence value ([0.0, 1.0]) from the hand detection model for the detection to be considered successful.
+    """
     global handsMP, min_detection_confidence, min_tracking_confidence
     min_detection_confidence = float(val)
     handsMP = mp_hands.Hands(
@@ -261,7 +270,12 @@ def set_valueA(val):
         min_tracking_confidence=min_tracking_confidence)
 
 
-def set_valueB(val):
+def set_tracking_confidence(val):
+    """
+    Minimum confidence value ([0.0, 1.0]) from the landmark-tracking model for the hand landmarks to be considered
+    tracked successfully, or otherwise hand detection will be invoked automatically on the next input image.
+    Setting it to a higher value can increase robustness of the solution, at the expense of a higher latency.
+    """
     global handsMP, min_detection_confidence, min_tracking_confidence
     min_tracking_confidence = float(val)
     handsMP = mp_hands.Hands(
@@ -269,31 +283,48 @@ def set_valueB(val):
         min_tracking_confidence=min_tracking_confidence)
 
 
-def set_valueC(val):
+def set_min_samples(val):
+    """
+    The number of samples (or total weight) in a neighborhood for a point to be considered as a core point.
+    This includes the point itself.
+    """
     global min_sample
     min_sample = int(val)
 
 
-def set_valueD(val):
+def set_eps(val):
+    """
+    The maximum distance between two samples for one to be considered as in the neighborhood of the other. This is not a
+    maximum bound on the distances of points within a cluster. This is the most important DBSCAN parameter to choose
+    appropriately for your data set and distance function.
+    """
     global eps
     eps = int(val)
 
 
 class App(object):
     def __init__(self, master):
-        master.geometry("200x200")
+        master.geometry("250x350")
         master.title("My GUI Title")
-        w = tk.Scale(master, from_=0, to=1, resolution=0.01, orient=tk.HORIZONTAL, command=set_valueA)
-        w.set(0.35)
+        w = tk.Label(master, text="mediapipe - hand detection confidence")
         w.pack()
-        w = tk.Scale(master, from_=0, to=1, resolution=0.01, orient=tk.HORIZONTAL, command=set_valueB)
-        w.set(0.30)
+        w = tk.Scale(master, from_=0, to=1, resolution=0.01, orient=tk.HORIZONTAL, command=set_detection_confidence)
+        w.set(min_detection_confidence)
         w.pack()
-        w = tk.Scale(master, from_=0, to=15, orient=tk.HORIZONTAL, command=set_valueC)
-        w.set(3)
+        w = tk.Label(master, text="mediapipe - hand tracking confidence")
         w.pack()
-        w = tk.Scale(master, from_=0, to=100, orient=tk.HORIZONTAL, command=set_valueD)
-        w.set(30)
+        w = tk.Scale(master, from_=0, to=1, resolution=0.01, orient=tk.HORIZONTAL, command=set_tracking_confidence)
+        w.set(min_tracking_confidence)
+        w.pack()
+        w = tk.Label(master, text="outlier detection - minimum samples")
+        w.pack()
+        w = tk.Scale(master, from_=0, to=15, orient=tk.HORIZONTAL, command=set_min_samples)
+        w.set(min_samples)
+        w.pack()
+        w = tk.Label(master, text="outlier detection - eps")
+        w.pack()
+        w = tk.Scale(master, from_=0, to=100, orient=tk.HORIZONTAL, command=set_eps)
+        w.set(eps)
         w.pack()
 
 
@@ -302,6 +333,7 @@ def tkinterGui():
     app = App(mainWindow)
     mainWindow.mainloop()
 
+##########################################################################################
 
 if __name__ == '__main__':
     options = getOptions(sys.argv[1:])
