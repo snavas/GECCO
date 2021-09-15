@@ -39,7 +39,7 @@ class RealSense(Device):
             # Tell config that we will use a recorded device from filem to be used by the pipeline through playback.
             rs.config.enable_device_from_file(config, id)
         config.enable_stream(rs.stream.color, 1280, 720, rs.format.rgb8, 30)
-        if not depth:
+        if depth:
             config.enable_stream(rs.stream.depth, 1280, 720, rs.format.z16, 30)
         if ir:
             config.enable_stream(rs.stream.infrared, 1280, 720)
@@ -49,7 +49,7 @@ class RealSense(Device):
         self.color_intr = profile.get_stream(rs.stream.color).as_video_stream_profile().get_intrinsics()
         if ir:
             self.ir_intr = profile.get_stream(rs.stream.infrared).as_video_stream_profile().get_intrinsics()
-        if not depth:
+        if depth:
             self.depth_intr = profile.get_stream(rs.stream.depth).as_video_stream_profile().get_intrinsics()
             # Getting the depth sensor's depth scale (see rs-align example for explanation)
             depth_sensor = profile.get_device().first_depth_sensor()
@@ -65,10 +65,10 @@ class RealSense(Device):
             except Exception as e:
                 pass
 
-        # We will be removing the background of objects more than
-        #  clipping_distance_in_meters meters away
-        clipping_distance_in_meters = 1.15  # 1 meter
-        self.clipping_distance = clipping_distance_in_meters / self.depth_scale
+            # We will be removing the background of objects more than
+            #  clipping_distance_in_meters meters away
+            clipping_distance_in_meters = 1.15  # 1 meter
+            self.clipping_distance = clipping_distance_in_meters / self.depth_scale
 
         # Create an align object
         # rs.align allows us to perform alignment of depth frames to others frames
