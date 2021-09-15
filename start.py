@@ -42,6 +42,9 @@ handsMP = mp_hands.Hands(
 # init ir_frame
 irframe = np.array([])
 
+# transformation matrix for calibrating table size
+transform_mat = np.array([])
+
 if sys.platform == 'win32':
     asyncio.set_event_loop_policy(asyncio.WindowsSelectorEventLoopPolicy())
 
@@ -59,8 +62,6 @@ async def custom_frame_generator(pattern):
         log_time = str(int(time.time()))
         log = open("logs/log_" + log_time + ".log", "x")
         log.write("timestamp height class x y" + "\n")
-        # initialize corners
-        transform_mat = np.array([])
         # define initial pink range
         lower_color = np.array([1, 1, 1])
         upper_color = np.array([0, 0, 0])
@@ -72,7 +73,7 @@ async def custom_frame_generator(pattern):
         current_tui_setting = tui_dict[5]
         cm_per_pix = -1
 
-        global irframe, min_samples, eps
+        global irframe, min_samples, eps, transform_mat
 
         # loop over stream until its terminated
         while True:
@@ -130,7 +131,10 @@ async def custom_frame_generator(pattern):
                         frame = hand_future.result()
                         irframe, prev_frame, prev_point, current_tui_setting = ir_future.result()
                         frame = cv2.bitwise_or(frame, irframe)
-                        irframe = cv2.warpPerspective(irframe, transform_mat, irframe.shape[1:None:-1])
+                        try:
+                            irframe = cv2.warpPerspective(irframe, transform_mat, irframe.shape[1:None:-1])
+                        except Exception as e:
+                            print(bcolors.FAIL + traceback.format_exc() + bcolors.ENDC)
                 ##############
                 # Just Hands #
                 ##############
@@ -146,8 +150,10 @@ async def custom_frame_generator(pattern):
                 #     for hand_landmarks in resultsMP.multi_hand_landmarks:
                 #         mp_drawing.draw_landmarks(
                 #             frame, hand_landmarks, mp_hands.HAND_CONNECTIONS)
-
-                frame = cv2.warpPerspective(frame, transform_mat, colorframe.shape[1:None:-1])
+                try:
+                    frame = cv2.warpPerspective(frame, transform_mat, colorframe.shape[1:None:-1])
+                except Exception as e:
+                    print(bcolors.FAIL + traceback.format_exc() + bcolors.ENDC)
 
             # to measure time to completion
             # print(time.time() - timestamp)
@@ -302,30 +308,44 @@ def set_eps(val):
     eps = int(val)
 
 
+def recalibrate_table():
+    global transform_mat
+    transform_mat = np.array([])
+
+
 class App(object):
     def __init__(self, master):
         master.geometry("250x350")
         master.title("My GUI Title")
-        w = tk.Label(master, text="mediapipe - hand detection confidence")
-        w.pack()
-        w = tk.Scale(master, from_=0, to=1, resolution=0.01, orient=tk.HORIZONTAL, command=set_detection_confidence)
-        w.set(min_detection_confidence)
-        w.pack()
-        w = tk.Label(master, text="mediapipe - hand tracking confidence")
-        w.pack()
-        w = tk.Scale(master, from_=0, to=1, resolution=0.01, orient=tk.HORIZONTAL, command=set_tracking_confidence)
-        w.set(min_tracking_confidence)
-        w.pack()
-        w = tk.Label(master, text="outlier detection - minimum samples")
-        w.pack()
-        w = tk.Scale(master, from_=0, to=15, orient=tk.HORIZONTAL, command=set_min_samples)
-        w.set(min_samples)
-        w.pack()
-        w = tk.Label(master, text="outlier detection - eps")
-        w.pack()
-        w = tk.Scale(master, from_=0, to=100, orient=tk.HORIZONTAL, command=set_eps)
-        w.set(eps)
-        w.pack()
+
+        label = tk.Label(master, text="mediapipe - hand detection confidence")
+        label.pack()
+        scale = tk.Scale(master, from_=0, to=1, resolution=0.01, orient=tk.HORIZONTAL, command=set_detection_confidence)
+        scale.set(min_detection_confidence)
+        scale.pack()
+
+        label = tk.Label(master, text="mediapipe - hand tracking confidence")
+        label.pack()
+        scale = tk.Scale(master, from_=0, to=1, resolution=0.01, orient=tk.HORIZONTAL, command=set_tracking_confidence)
+        scale.set(min_tracking_confidence)
+        scale.pack()
+
+        label = tk.Label(master, text="outlier detection - minimum samples")
+        label.pack()
+        scale = tk.Scale(master, from_=0, to=15, orient=tk.HORIZONTAL, command=set_min_samples)
+        scale.set(min_samples)
+        scale.pack()
+
+        label = tk.Label(master, text="outlier detection - eps")
+        label.pack()
+        scale = tk.Scale(master, from_=0, to=100, orient=tk.HORIZONTAL, command=set_eps)
+        scale.set(eps)
+        scale.pack()
+
+        label = tk.Label(master, text="")
+        label.pack()
+        button = tk.Button(master, text ="recalibrate table", command = recalibrate_table)
+        button.pack()
 
 
 def tkinterGui():
