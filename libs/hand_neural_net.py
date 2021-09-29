@@ -211,9 +211,8 @@ def getHand(colorframe, colorspace, pattern, lower_color, upper_color, handsMP, 
                     ###############
                     else:
                         result = cv2.bitwise_and(copy, copy, mask=hand["mask"])
-                        #result = cv2.bitwise_not(result)
-                        result = cv2.cvtColor(result, cv2.COLOR_BGR2GRAY)
-                        result = cv2.cvtColor(result, cv2.COLOR_GRAY2BGR)
+                        result = cv2.bitwise_not(result)
+                        result[:, :, 1] = 0
                     hand["hand_image"] = result
                     hands.append(hand)
     return hands, lower_color, upper_color
