@@ -17,7 +17,7 @@ msgpack==1.0.2
 msgpack-numpy==0.4.7.1
 mss==6.1.0
 multidict==5.1.0
-numpy==1.20.1
+numpy==1.22.0
 opencv-contrib-python==4.5.3.56
 pafy==0.5.5
 Pillow==8.3.2
