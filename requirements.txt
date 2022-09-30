@@ -12,7 +12,7 @@ idna==2.10
 iso-639==0.4.5
 iso3166==1.0.1
 isodate==0.6.0
-joblib==1.0.1
+joblib==1.2.0
 msgpack==1.0.2
 msgpack-numpy==0.4.7.1
 mss==6.1.0
