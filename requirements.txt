@@ -20,7 +20,7 @@ multidict==5.1.0
 numpy==1.20.1
 opencv-contrib-python==4.5.3.56
 pafy==0.5.5
-Pillow==8.3.2
+Pillow==9.3.0
 pycryptodome==3.10.1
 pyrealsense2==2.44.0.3073
 pyscreenshot==2.3
