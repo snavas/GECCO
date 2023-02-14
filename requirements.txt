@@ -32,7 +32,7 @@ scikit-learn==0.24.1
 scipy==1.6.0
 six==1.15.0
 sklearn==0.0
-starlette==0.14.2
+starlette==0.25.0
 streamlink==2.0.0
 threadpoolctl==2.1.0
 tqdm==4.56.1
